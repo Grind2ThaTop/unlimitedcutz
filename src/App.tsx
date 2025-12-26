@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Portal from "./pages/Portal";
@@ -13,6 +14,7 @@ import Billing from "./pages/Billing";
 import Store from "./pages/Store";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import AdminRanks from "./pages/admin/AdminRanks";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,30 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Admin route wrapper
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading: authLoading } = useAuth();
+  const { isAdmin, isAdminLoading } = useAdmin();
+
+  if (authLoading || isAdminLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/portal" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -51,6 +77,8 @@ const App = () => (
             <Route path="/portal/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
             <Route path="/portal/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
             <Route path="/portal/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
+            {/* Admin Routes */}
+            <Route path="/portal/admin/ranks" element={<AdminRoute><AdminRanks /></AdminRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
