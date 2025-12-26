@@ -1,6 +1,27 @@
 // Rank configuration - LOCKED
 // These values define the rank system for the organization
 
+// Account Types
+export type AccountType = 'client' | 'barber';
+
+// Matrix Commission Rates (% of $50 membership)
+export const CLIENT_MATRIX_PERCENT = 2.5;  // $1.25 per position
+export const BARBER_MATRIX_PERCENT = 5.0;  // $2.50 per position
+
+// Matching Bonus Rates
+export const CLIENT_MATCHING = { l1: 10, l2: 5 };   // 10% L1, 5% L2
+export const BARBER_MATCHING = { l1: 20, l2: 10 };  // 20% L1, 10% L2
+
+// Get matrix percentage based on account type
+export const getMatrixPercent = (accountType: AccountType): number => {
+  return accountType === 'barber' ? BARBER_MATRIX_PERCENT : CLIENT_MATRIX_PERCENT;
+};
+
+// Get matching percentages based on account type
+export const getMatchingRates = (accountType: AccountType): { l1: number; l2: number } => {
+  return accountType === 'barber' ? BARBER_MATCHING : CLIENT_MATCHING;
+};
+
 export type RankId = 'rookie' | 'hustla' | 'grinder' | 'influencer' | 'executive' | 'partner';
 
 export interface RankRequirements {

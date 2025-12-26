@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_roles: {
+        Row: {
+          account_type: Database["public"]["Enums"]["account_type"]
+          created_at: string
+          id: string
+          matching_l1_percent: number
+          matching_l2_percent: number
+          matrix_percent: number
+          updated_at: string
+          upgraded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"]
+          created_at?: string
+          id?: string
+          matching_l1_percent?: number
+          matching_l2_percent?: number
+          matrix_percent?: number
+          updated_at?: string
+          upgraded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_type?: Database["public"]["Enums"]["account_type"]
+          created_at?: string
+          id?: string
+          matching_l1_percent?: number
+          matching_l2_percent?: number
+          matrix_percent?: number
+          updated_at?: string
+          upgraded_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           id: string
@@ -643,6 +679,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_type: "client" | "barber"
       app_role: "member" | "admin"
       commission_type:
         | "fast_start"
@@ -787,6 +824,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["client", "barber"],
       app_role: ["member", "admin"],
       commission_type: [
         "fast_start",
