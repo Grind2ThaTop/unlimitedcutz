@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Shield, Users } from 'lucide-react';
+import { Shield, Users, UserPlus } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import UserRankTable from '@/components/admin/UserRankTable';
 import RankAssignmentDialog from '@/components/admin/RankAssignmentDialog';
 import UserRankHistoryDialog from '@/components/admin/UserRankHistoryDialog';
+import AddUserDialog from '@/components/admin/AddUserDialog';
 import { useAdmin } from '@/hooks/useAdmin';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -34,11 +36,14 @@ const AdminRanks = () => {
     isUpdatingRank,
     toggleActive,
     fetchUserRankHistory,
+    createUser,
+    isCreatingUser,
   } = useAdmin();
 
   const [selectedUser, setSelectedUser] = useState<UserWithRank | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
 
   const handleEditRank = (user: UserWithRank) => {
     setSelectedUser(user);
@@ -68,22 +73,43 @@ const AdminRanks = () => {
     });
   };
 
+  const handleCreateUser = (data: {
+    email: string;
+    full_name: string;
+    password: string;
+    account_type: 'client' | 'barber';
+    initial_rank: string;
+    referral_code?: string;
+  }) => {
+    createUser(data, {
+      onSuccess: () => {
+        setAddUserDialogOpen(false);
+      },
+    });
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Shield className="w-6 h-6 text-primary" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Shield className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-display font-bold text-foreground">
+                Rank Management
+              </h1>
+              <p className="text-muted-foreground">
+                Assign and manage user ranks
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-display font-bold text-foreground">
-              Rank Management
-            </h1>
-            <p className="text-muted-foreground">
-              Assign and manage user ranks
-            </p>
-          </div>
+          <Button onClick={() => setAddUserDialogOpen(true)}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Add User
+          </Button>
         </div>
 
         {/* Stats */}
@@ -165,6 +191,13 @@ const AdminRanks = () => {
         open={historyDialogOpen}
         onOpenChange={setHistoryDialogOpen}
         fetchHistory={fetchUserRankHistory}
+      />
+
+      <AddUserDialog
+        open={addUserDialogOpen}
+        onOpenChange={setAddUserDialogOpen}
+        onSubmit={handleCreateUser}
+        isLoading={isCreatingUser}
       />
     </PortalLayout>
   );

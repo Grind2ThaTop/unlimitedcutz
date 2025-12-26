@@ -200,6 +200,40 @@ export const useAdmin = () => {
     },
   });
 
+  // Create new user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: {
+      email: string;
+      full_name: string;
+      password: string;
+      account_type: 'client' | 'barber';
+      initial_rank: string;
+      referral_code?: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: userData,
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      toast({
+        title: 'User Created',
+        description: 'New user has been successfully created.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: 'Failed to create user. ' + error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     isAdmin: adminQuery.data ?? false,
     isAdminLoading: adminQuery.isLoading,
@@ -210,5 +244,7 @@ export const useAdmin = () => {
     isUpdatingRank: updateRankMutation.isPending,
     toggleActive: toggleActiveMutation.mutate,
     isTogglingActive: toggleActiveMutation.isPending,
+    createUser: createUserMutation.mutate,
+    isCreatingUser: createUserMutation.isPending,
   };
 };
