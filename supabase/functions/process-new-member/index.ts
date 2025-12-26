@@ -386,7 +386,7 @@ serve(async (req) => {
       }
     }
 
-    // ========== MATRIX INCOME (Upline gets paid when positions fill) ==========
+    // ========== MATRIX INCOME (Role-based: Client 2.5%, Barber 5%) ==========
     if (parentId) {
       const matrixCommissions: any[] = [];
       let currentParentId = parentId;
@@ -409,14 +409,35 @@ serve(async (req) => {
           .maybeSingle();
 
         if (parentMembership) {
+          // Get account role to determine matrix percentage
+          const { data: accountRole } = await supabaseAdmin
+            .from('account_roles')
+            .select('account_type, matrix_percent')
+            .eq('user_id', parentNode.user_id)
+            .maybeSingle();
+
+          // Default to client rates if no account_role found
+          const matrixPercent = accountRole?.matrix_percent || 2.5;
+          const accountType = accountRole?.account_type || 'client';
+          
+          // Calculate commission: $50 * matrix_percent / 100
+          const commissionAmount = 50 * (matrixPercent / 100);
+
           matrixCommissions.push({
             user_id: parentNode.user_id,
-            amount: settings.matrix.per_placement,
+            amount: commissionAmount,
             commission_type: 'matrix_membership',
             level: uplineLevel,
             source_user_id: user_id,
-            description: `Matrix Level ${uplineLevel} Placement`,
+            description: `Matrix Level ${uplineLevel} (${accountType} ${matrixPercent}%)`,
             status: 'pending',
+          });
+
+          logStep("Matrix commission calculated", { 
+            userId: parentNode.user_id, 
+            accountType, 
+            matrixPercent, 
+            amount: commissionAmount 
           });
         }
 
@@ -453,6 +474,17 @@ serve(async (req) => {
           .single();
 
         if (earnerProfile?.referred_by) {
+          // Get L1 sponsor's account role for matching rates
+          const { data: l1AccountRole } = await supabaseAdmin
+            .from('account_roles')
+            .select('account_type, matching_l1_percent, matching_l2_percent')
+            .eq('user_id', earnerProfile.referred_by)
+            .maybeSingle();
+
+          // Default to client rates (10%/5%) if no account_role found
+          const l1MatchPercent = l1AccountRole?.matching_l1_percent || 10;
+          const l1AccountType = l1AccountRole?.account_type || 'client';
+
           const { data: l1Membership } = await supabaseAdmin
             .from('memberships')
             .select('status')
@@ -461,7 +493,7 @@ serve(async (req) => {
             .maybeSingle();
 
           if (l1Membership) {
-            const l1Match = (totalEarned as number) * (settings.matching.level_1_percent / 100);
+            const l1Match = (totalEarned as number) * (l1MatchPercent / 100);
             if (l1Match > 0) {
               matchingCommissions.push({
                 user_id: earnerProfile.referred_by,
@@ -469,8 +501,15 @@ serve(async (req) => {
                 commission_type: 'matching_bonus',
                 level: 1,
                 source_user_id: earnerId,
-                description: `10% Matching Bonus - Level 1`,
+                description: `${l1MatchPercent}% Matching Bonus - Level 1 (${l1AccountType})`,
                 status: 'pending',
+              });
+
+              logStep("L1 Matching calculated", { 
+                userId: earnerProfile.referred_by, 
+                accountType: l1AccountType, 
+                matchPercent: l1MatchPercent, 
+                amount: l1Match 
               });
             }
 
@@ -481,6 +520,17 @@ serve(async (req) => {
               .single();
 
             if (l1Profile?.referred_by) {
+              // Get L2 sponsor's account role for matching rates
+              const { data: l2AccountRole } = await supabaseAdmin
+                .from('account_roles')
+                .select('account_type, matching_l2_percent')
+                .eq('user_id', l1Profile.referred_by)
+                .maybeSingle();
+
+              // Default to client rates if no account_role found
+              const l2MatchPercent = l2AccountRole?.matching_l2_percent || 5;
+              const l2AccountType = l2AccountRole?.account_type || 'client';
+
               const { data: l2Membership } = await supabaseAdmin
                 .from('memberships')
                 .select('status')
@@ -489,7 +539,7 @@ serve(async (req) => {
                 .maybeSingle();
 
               if (l2Membership) {
-                const l2Match = (totalEarned as number) * (settings.matching.level_2_percent / 100);
+                const l2Match = (totalEarned as number) * (l2MatchPercent / 100);
                 if (l2Match > 0) {
                   matchingCommissions.push({
                     user_id: l1Profile.referred_by,
@@ -497,8 +547,15 @@ serve(async (req) => {
                     commission_type: 'matching_bonus',
                     level: 2,
                     source_user_id: earnerId,
-                    description: `5% Matching Bonus - Level 2`,
+                    description: `${l2MatchPercent}% Matching Bonus - Level 2 (${l2AccountType})`,
                     status: 'pending',
+                  });
+
+                  logStep("L2 Matching calculated", { 
+                    userId: l1Profile.referred_by, 
+                    accountType: l2AccountType, 
+                    matchPercent: l2MatchPercent, 
+                    amount: l2Match 
                   });
                 }
               }

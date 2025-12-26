@@ -163,15 +163,15 @@ const Referrals = () => {
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <h3 className="font-display text-sm">Matrix Income</h3>
-                <p className="text-xs text-muted-foreground truncate">3×8 forced • 2.5%/level</p>
+                <p className="text-xs text-muted-foreground truncate">3×8 forced • 2.5-5%/level</p>
               </div>
             </div>
             <div className="px-3 pb-3 pt-1 border-t border-blue-500/10">
               <p className="text-xs text-muted-foreground mb-2">Earn as the matrix fills — no personal recruiting required.</p>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-muted-foreground">Matrix type:</span><span className="font-medium">3×8 Forced</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Commission rate:</span><span className="font-medium text-blue-500">2.5%/level</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Max depth:</span><span className="font-medium">8 levels</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Client rate:</span><span className="font-medium text-blue-500">2.5%/level</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Barber rate:</span><span className="font-medium text-primary">5%/level</span></div>
               </div>
             </div>
           </div>
@@ -183,14 +183,14 @@ const Referrals = () => {
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <h3 className="font-display text-sm">Matching Bonus</h3>
-                <p className="text-xs text-muted-foreground truncate">10% L1 • 5% L2</p>
+                <p className="text-xs text-muted-foreground truncate">Role-based rates</p>
               </div>
             </div>
             <div className="px-3 pb-3 pt-1 border-t border-purple-500/10">
               <p className="text-xs text-muted-foreground mb-2">Earn a percentage of what your organization earns.</p>
               <div className="space-y-1 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">Level 1 match:</span><span className="font-medium text-purple-500">10%</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Level 2 match:</span><span className="font-medium text-purple-500">5%</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Client:</span><span className="font-medium text-blue-500">L1: 10% • L2: 5%</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Barber:</span><span className="font-medium text-primary">L1: 20% • L2: 10%</span></div>
               </div>
             </div>
           </div>
@@ -348,7 +348,7 @@ const Referrals = () => {
                 </div>
                 <div className="text-left">
                   <h2 className="font-display text-xl">Matrix Commissions</h2>
-                  <p className="text-sm text-muted-foreground">2×15 forced matrix with rank-based eligibility</p>
+                  <p className="text-sm text-muted-foreground">3×8 forced matrix with rank-based eligibility</p>
                 </div>
               </div>
               <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", openSections.matrix && "rotate-180")} />
