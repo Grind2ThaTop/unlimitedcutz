@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Scissors, Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, signIn, signUp, sendMagicLink } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -18,18 +22,115 @@ const Auth = () => {
     confirmPassword: "",
   });
 
+  // Get referral code from URL if present
+  const referralCode = searchParams.get('ref') || '';
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/portal');
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // TODO: Implement actual auth with Supabase
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      if (mode === "signin") {
+        const { error } = await signIn(formData.email, formData.password);
+        if (error) {
+          toast({
+            title: "Sign in failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Welcome back!",
+            description: "Redirecting to your dashboard...",
+          });
+          navigate('/portal');
+        }
+      } else {
+        if (formData.password !== formData.confirmPassword) {
+          toast({
+            title: "Passwords don't match",
+            description: "Please make sure your passwords match.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if (formData.password.length < 6) {
+          toast({
+            title: "Password too short",
+            description: "Password must be at least 6 characters.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const { error } = await signUp(
+          formData.email, 
+          formData.password, 
+          formData.fullName,
+          referralCode
+        );
+        
+        if (error) {
+          toast({
+            title: "Sign up failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Account created!",
+            description: "Redirecting to your dashboard...",
+          });
+          navigate('/portal');
+        }
+      }
+    } catch (err) {
       toast({
-        title: mode === "signin" ? "Welcome back!" : "Account created!",
-        description: "Redirecting to your dashboard...",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
       });
-    }, 1500);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    if (!formData.email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await sendMagicLink(formData.email);
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Failed to send link",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Magic link sent!",
+        description: "Check your email for a login link.",
+      });
+    }
   };
 
   return (
@@ -109,6 +210,15 @@ const Auth = () => {
               Sign Up
             </button>
           </div>
+
+          {/* Referral Banner */}
+          {referralCode && mode === "signup" && (
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6">
+              <p className="text-sm text-secondary-foreground">
+                🎉 You were referred! Code: <span className="font-mono font-bold text-primary">{referralCode}</span>
+              </p>
+            </div>
+          )}
 
           {/* Form Header */}
           <div className="mb-8">
@@ -237,6 +347,8 @@ const Auth = () => {
             variant="heroOutline"
             size="lg"
             className="w-full"
+            onClick={handleMagicLink}
+            disabled={isLoading}
           >
             <Mail className="w-5 h-5 mr-2" />
             Send Magic Link

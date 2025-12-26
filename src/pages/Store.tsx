@@ -1,65 +1,29 @@
 import PortalLayout from "@/components/portal/PortalLayout";
-import { ShoppingBag, Star, Plus } from "lucide-react";
+import { ShoppingBag, Star, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const products = [
-  {
-    id: 1,
-    name: "Premium Beard Oil",
-    description: "Nourishing blend of argan and jojoba oils",
-    price: 24.99,
-    memberPrice: 19.99,
-    image: "🧴",
-    rating: 4.8,
-  },
-  {
-    id: 2,
-    name: "Styling Pomade",
-    description: "Medium hold with natural shine",
-    price: 18.99,
-    memberPrice: 14.99,
-    image: "💈",
-    rating: 4.9,
-  },
-  {
-    id: 3,
-    name: "Magnetic Hair Tonic",
-    description: "Revitalizing scalp treatment",
-    price: 29.99,
-    memberPrice: 24.99,
-    image: "💧",
-    rating: 4.7,
-  },
-  {
-    id: 4,
-    name: "Shave Butter",
-    description: "Ultra-smooth shaving cream",
-    price: 15.99,
-    memberPrice: 12.99,
-    image: "🪒",
-    rating: 4.6,
-  },
-  {
-    id: 5,
-    name: "Magnetic T-Shirt",
-    description: "Premium cotton, embroidered logo",
-    price: 34.99,
-    memberPrice: 29.99,
-    image: "👕",
-    rating: 5.0,
-  },
-  {
-    id: 6,
-    name: "Grooming Kit",
-    description: "Complete set with travel case",
-    price: 79.99,
-    memberPrice: 64.99,
-    image: "🎁",
-    rating: 4.9,
-  },
-];
+import { useProducts } from "@/hooks/useProducts";
 
 const Store = () => {
+  const { 
+    products, 
+    isLoading, 
+    cart, 
+    addToCart, 
+    updateQuantity,
+    cartTotal, 
+    cartItemCount 
+  } = useProducts();
+
+  if (isLoading) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </PortalLayout>
+    );
+  }
+
   return (
     <PortalLayout>
       <div className="max-w-6xl mx-auto">
@@ -89,44 +53,80 @@ const Store = () => {
 
         {/* Products Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div 
-              key={product.id}
-              className="bg-card border border-border/50 rounded-xl overflow-hidden hover:shadow-lg transition-all group"
-            >
-              {/* Product Image */}
-              <div className="h-48 bg-muted/30 flex items-center justify-center text-6xl">
-                {product.image}
-              </div>
-
-              {/* Product Info */}
-              <div className="p-5">
-                <div className="flex items-center gap-1 mb-2">
-                  <Star className="w-4 h-4 fill-primary text-primary" />
-                  <span className="text-sm font-medium">{product.rating}</span>
+          {products.map((product) => {
+            const cartItem = cart.find(item => item.product.id === product.id);
+            const quantity = cartItem?.quantity || 0;
+            
+            return (
+              <div 
+                key={product.id}
+                className="bg-card border border-border/50 rounded-xl overflow-hidden hover:shadow-lg transition-all group"
+              >
+                {/* Product Image */}
+                <div className="h-48 bg-muted/30 flex items-center justify-center text-6xl">
+                  {product.image_url || '📦'}
                 </div>
 
-                <h3 className="font-display text-xl mb-1">{product.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-muted-foreground line-through text-sm">
-                      ${product.price.toFixed(2)}
-                    </span>
-                    <span className="font-display text-2xl text-primary ml-2">
-                      ${product.memberPrice.toFixed(2)}
-                    </span>
+                {/* Product Info */}
+                <div className="p-5">
+                  <div className="flex items-center gap-1 mb-2">
+                    <Star className="w-4 h-4 fill-primary text-primary" />
+                    <span className="text-sm font-medium">{product.rating || 5.0}</span>
                   </div>
-                  <Button size="sm">
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add
-                  </Button>
+
+                  <h3 className="font-display text-xl mb-1">{product.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-muted-foreground line-through text-sm">
+                        ${Number(product.price).toFixed(2)}
+                      </span>
+                      <span className="font-display text-2xl text-primary ml-2">
+                        ${Number(product.member_price).toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    {quantity > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(product.id, quantity - 1)}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="font-medium w-8 text-center">{quantity}</span>
+                        <Button 
+                          size="icon" 
+                          variant="outline" 
+                          className="h-8 w-8"
+                          onClick={() => updateQuantity(product.id, quantity + 1)}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" onClick={() => addToCart(product)}>
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {products.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">
+            <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-30" />
+            <p className="text-lg">No products available</p>
+            <p className="text-sm">Check back soon for new items!</p>
+          </div>
+        )}
 
         {/* Cart Summary */}
         <div className="fixed bottom-4 left-4 right-4 lg:left-auto lg:right-8 lg:bottom-8 lg:w-80">
@@ -137,11 +137,11 @@ const Store = () => {
                 <span className="font-medium">Cart</span>
               </div>
               <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
-                0 items
+                {cartItemCount} items
               </span>
             </div>
-            <Button variant="hero" className="w-full" disabled>
-              Checkout • $0.00
+            <Button variant="hero" className="w-full" disabled={cartItemCount === 0}>
+              Checkout • ${cartTotal.toFixed(2)}
             </Button>
           </div>
         </div>

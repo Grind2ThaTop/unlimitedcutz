@@ -1,31 +1,35 @@
 import PortalLayout from "@/components/portal/PortalLayout";
 import { 
   CreditCard, 
-  Download, 
   AlertCircle, 
   CheckCircle,
   Calendar,
   Receipt
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMembership } from "@/hooks/useMembership";
+import { format } from "date-fns";
 
 const Billing = () => {
-  // Mock data
-  const subscription = {
-    status: "active",
-    plan: "Base Membership + 1 Add-on",
-    amount: "$75",
-    nextBilling: "January 15, 2025",
-    card: "**** **** **** 4242",
-    cardBrand: "Visa",
-  };
+  const { membership, isLoading } = useMembership();
 
-  const invoices = [
-    { id: "INV-001234", date: "Dec 15, 2024", amount: "$75", status: "paid" },
-    { id: "INV-001233", date: "Nov 15, 2024", amount: "$75", status: "paid" },
-    { id: "INV-001232", date: "Oct 15, 2024", amount: "$50", status: "paid" },
-    { id: "INV-001231", date: "Sep 15, 2024", amount: "$50", status: "paid" },
-  ];
+  const status = membership?.status || 'pending';
+  const baseAmount = Number(membership?.base_amount || 50);
+  const addonAmount = Number(membership?.addon_amount || 0);
+  const totalAmount = baseAmount + addonAmount;
+  const nextBillingDate = membership?.current_period_end 
+    ? format(new Date(membership.current_period_end), 'MMMM d, yyyy')
+    : 'N/A';
+
+  if (isLoading) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>
@@ -48,15 +52,20 @@ const Billing = () => {
               <div>
                 <h2 className="font-display text-xl">Current Subscription</h2>
                 <div className="flex items-center gap-2 mt-1">
-                  {subscription.status === "active" ? (
+                  {status === "active" ? (
                     <span className="flex items-center gap-1 text-green-400 text-sm">
                       <CheckCircle className="w-4 h-4" />
                       Active
                     </span>
-                  ) : (
+                  ) : status === "past_due" ? (
                     <span className="flex items-center gap-1 text-red-400 text-sm">
                       <AlertCircle className="w-4 h-4" />
                       Past Due
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-amber-400 text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
                     </span>
                   )}
                 </div>
@@ -70,22 +79,24 @@ const Billing = () => {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <p className="text-sm text-secondary-foreground/60 mb-1">Plan</p>
-              <p className="font-medium">{subscription.plan}</p>
+              <p className="font-medium">
+                Base Membership{addonAmount > 0 ? ` + Add-ons` : ''}
+              </p>
             </div>
             <div>
               <p className="text-sm text-secondary-foreground/60 mb-1">Monthly Amount</p>
-              <p className="font-display text-2xl text-primary">{subscription.amount}</p>
+              <p className="font-display text-2xl text-primary">${totalAmount}</p>
             </div>
             <div>
               <p className="text-sm text-secondary-foreground/60 mb-1">Next Billing Date</p>
               <p className="font-medium flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                {subscription.nextBilling}
+                {nextBillingDate}
               </p>
             </div>
             <div>
               <p className="text-sm text-secondary-foreground/60 mb-1">Payment Method</p>
-              <p className="font-medium">{subscription.cardBrand} {subscription.card}</p>
+              <p className="font-medium">Not configured</p>
             </div>
           </div>
         </div>
@@ -94,19 +105,16 @@ const Billing = () => {
         <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-xl">Payment Method</h2>
-            <Button variant="ghost" size="sm">Update Card</Button>
+            <Button variant="ghost" size="sm">Add Card</Button>
           </div>
 
           <div className="flex items-center gap-4 bg-muted/30 rounded-lg p-4">
-            <div className="w-14 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-xs">VISA</span>
+            <div className="w-14 h-10 bg-muted rounded flex items-center justify-center">
+              <CreditCard className="w-6 h-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-medium">Visa ending in 4242</p>
-              <p className="text-sm text-muted-foreground">Expires 12/2026</p>
-            </div>
-            <div className="ml-auto">
-              <span className="bg-green-500/10 text-green-600 text-xs px-2 py-1 rounded">Default</span>
+              <p className="font-medium text-muted-foreground">No payment method on file</p>
+              <p className="text-sm text-muted-foreground">Add a card to activate your subscription</p>
             </div>
           </div>
         </div>
@@ -120,32 +128,10 @@ const Billing = () => {
             </h2>
           </div>
 
-          <div className="divide-y divide-border/50">
-            {invoices.map((invoice) => (
-              <div key={invoice.id} className="p-4 lg:p-6 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                    <Receipt className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{invoice.id}</p>
-                    <p className="text-sm text-muted-foreground">{invoice.date}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-display text-lg">{invoice.amount}</p>
-                    <span className="text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
-                      {invoice.status}
-                    </span>
-                  </div>
-                  <Button variant="ghost" size="icon">
-                    <Download className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+          <div className="p-8 text-center text-muted-foreground">
+            <Receipt className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No invoices yet</p>
+            <p className="text-sm">Your payment history will appear here</p>
           </div>
         </div>
 
