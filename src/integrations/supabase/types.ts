@@ -74,7 +74,7 @@ export type Database = {
         }
         Relationships: []
       }
-      household_members: {
+      connections: {
         Row: {
           created_at: string
           email: string | null
@@ -347,31 +347,49 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
+          bio: string | null
           created_at: string
           email: string
+          facebook_url: string | null
           full_name: string | null
           id: string
+          instagram_url: string | null
           referral_code: string | null
           referred_by: string | null
+          tiktok_url: string | null
           updated_at: string
+          x_url: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           email: string
+          facebook_url?: string | null
           full_name?: string | null
           id: string
+          instagram_url?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          tiktok_url?: string | null
           updated_at?: string
+          x_url?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           email?: string
+          facebook_url?: string | null
           full_name?: string | null
           id?: string
+          instagram_url?: string | null
           referral_code?: string | null
           referred_by?: string | null
+          tiktok_url?: string | null
           updated_at?: string
+          x_url?: string | null
         }
         Relationships: [
           {

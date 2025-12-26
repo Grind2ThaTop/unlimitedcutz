@@ -9,5 +9,5 @@ verify_jwt = false
 [functions.customer-portal]
 verify_jwt = false
 
-[functions.add-household-member]
+[functions.add-connection]
 verify_jwt = false

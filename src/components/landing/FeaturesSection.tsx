@@ -8,8 +8,8 @@ const features = [
   },
   {
     icon: Users,
-    title: "Household Coverage",
-    description: "Base membership covers 2 people. Add more family members for just $25/month each.",
+    title: "Connections Coverage",
+    description: "Base membership covers 2 people. Add more connections — friends, partners, coworkers — for just $25/month each.",
   },
   {
     icon: Calendar,

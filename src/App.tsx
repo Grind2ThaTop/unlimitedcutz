@@ -7,10 +7,11 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Portal from "./pages/Portal";
-import Household from "./pages/Household";
+import Connections from "./pages/Connections";
 import Referrals from "./pages/Referrals";
 import Billing from "./pages/Billing";
 import Store from "./pages/Store";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,7 +46,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/portal" element={<ProtectedRoute><Portal /></ProtectedRoute>} />
-            <Route path="/portal/household" element={<ProtectedRoute><Household /></ProtectedRoute>} />
+            <Route path="/portal/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
+            <Route path="/portal/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/portal/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
             <Route path="/portal/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
             <Route path="/portal/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />

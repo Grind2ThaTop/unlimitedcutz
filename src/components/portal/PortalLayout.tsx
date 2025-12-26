@@ -13,8 +13,10 @@ import {
   Menu,
   X,
   ChevronRight,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -22,7 +24,8 @@ interface PortalLayoutProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/portal" },
-  { icon: Users, label: "Household", href: "/portal/household" },
+  { icon: User, label: "Profile", href: "/portal/profile" },
+  { icon: Users, label: "Connections", href: "/portal/connections" },
   { icon: Calendar, label: "Book Appointment", href: "/portal/booking" },
   { icon: CreditCard, label: "Billing", href: "/portal/billing" },
   { icon: Share2, label: "Referral Center", href: "/portal/referrals" },
@@ -33,6 +36,14 @@ const navItems = [
 const PortalLayout = ({ children }: PortalLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { profile, signOut } = useAuth();
+
+  const initials = profile?.full_name
+    ?.split(' ')
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'U';
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -109,16 +120,21 @@ const PortalLayout = ({ children }: PortalLayoutProps) => {
           <div className="p-4 border-t border-border/10">
             <div className="flex items-center gap-3 px-4 py-3">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="font-display text-primary">JD</span>
+                <span className="font-display text-primary">{initials}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-secondary-foreground truncate">John Doe</p>
-                <p className="text-xs text-secondary-foreground/50 truncate">john@example.com</p>
+                <p className="text-sm font-medium text-secondary-foreground truncate">
+                  {profile?.full_name || 'Member'}
+                </p>
+                <p className="text-xs text-secondary-foreground/50 truncate">
+                  {profile?.email || ''}
+                </p>
               </div>
             </div>
             <Button
               variant="ghost"
               className="w-full justify-start text-secondary-foreground/60 hover:text-primary mt-2"
+              onClick={signOut}
             >
               <LogOut className="w-5 h-5 mr-3" />
               Sign Out

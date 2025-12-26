@@ -8,11 +8,15 @@ import {
 const faqs = [
   {
     question: "How does the membership work?",
-    answer: "Your membership includes unlimited grooming for up to 2 named household members. Each person can visit once per week. You can add additional household members for $25/month each. Book appointments through our system and show your membership card at check-in.",
+    answer: "Your membership includes unlimited grooming for up to 2 named connections. Each person can visit once per week. You can add additional connections for $25/month each. Book appointments through our system and show your membership card at check-in.",
   },
   {
-    question: "Can I swap household members?",
-    answer: "No, memberships are for named household members only. You cannot swap people in and out. If you remove a household member, that slot is locked for a period before it can be reassigned. This ensures fair usage and maintains our service quality.",
+    question: "Can I swap connections?",
+    answer: "No, memberships are for named connections only. You cannot swap people in and out. If you remove a connection, that slot is locked for a period before it can be reassigned. This ensures fair usage and maintains our service quality.",
+  },
+  {
+    question: "Who can I add as a connection?",
+    answer: "Anyone! Connections don't need to live together. Add friends, partners, kids, coworkers, or anyone else you want to share your membership benefits with.",
   },
   {
     question: "What grooming services are included?",

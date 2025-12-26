@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const PRICE_BASE_MEMBERSHIP = "price_1Siel92MG3Cvt2BWUj0LlJcc";
-const PRICE_HOUSEHOLD_ADDON = "price_1SielF2MG3Cvt2BWhEuLLizU";
+const PRICE_CONNECTION_ADDON = "price_1SielF2MG3Cvt2BWhEuLLizU";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -35,8 +35,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { additionalMembers = 0 } = await req.json();
-    logStep("Request parsed", { additionalMembers });
+    const { additionalConnections = 0 } = await req.json();
+    logStep("Request parsed", { additionalConnections });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
       apiVersion: "2025-08-27.basil" 
@@ -58,11 +58,11 @@ serve(async (req) => {
       },
     ];
 
-    // Add household add-ons if requested
-    if (additionalMembers > 0) {
+    // Add connection add-ons if requested
+    if (additionalConnections > 0) {
       lineItems.push({
-        price: PRICE_HOUSEHOLD_ADDON,
-        quantity: additionalMembers,
+        price: PRICE_CONNECTION_ADDON,
+        quantity: additionalConnections,
       });
     }
 
@@ -77,7 +77,7 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/portal?canceled=true`,
       metadata: {
         user_id: user.id,
-        additional_members: additionalMembers.toString(),
+        additional_connections: additionalConnections.toString(),
       },
       subscription_data: {
         metadata: {
