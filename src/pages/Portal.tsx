@@ -9,7 +9,8 @@ import {
   CheckCircle,
   AlertCircle,
   ChevronRight,
-  Scissors
+  Scissors,
+  User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -23,15 +24,16 @@ import { toast } from "sonner";
 
 const quickActions = [
   { icon: Calendar, label: "Book Appointment", href: "/portal/booking", color: "bg-blue-500/10 text-blue-500" },
-  { icon: Users, label: "Manage Household", href: "/portal/household", color: "bg-green-500/10 text-green-500" },
+  { icon: Users, label: "Manage Connections", href: "/portal/connections", color: "bg-green-500/10 text-green-500" },
   { icon: Share2, label: "Referral Center", href: "/portal/referrals", color: "bg-purple-500/10 text-purple-500" },
   { icon: CreditCard, label: "Billing", href: "/portal/billing", color: "bg-orange-500/10 text-orange-500" },
   { icon: ShoppingBag, label: "Product Store", href: "/portal/store", color: "bg-pink-500/10 text-pink-500" },
+  { icon: User, label: "Profile", href: "/portal/profile", color: "bg-cyan-500/10 text-cyan-500" },
 ];
 
 const Portal = () => {
   const { profile } = useAuth();
-  const { membership, householdMembers, isEligibleForVisit, checkSubscription, createCheckout } = useMembership();
+  const { membership, connections, isEligibleForVisit, checkSubscription, createCheckout } = useMembership();
   const [searchParams] = useSearchParams();
 
   // Check for success/cancel from Stripe checkout
@@ -69,7 +71,7 @@ const Portal = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl lg:text-4xl mb-2">Welcome Back, {firstName}</h1>
-          <p className="text-muted-foreground">Manage your membership and household</p>
+          <p className="text-muted-foreground">Manage your membership and connections</p>
         </div>
 
         {/* Membership Card */}
@@ -114,8 +116,8 @@ const Portal = () => {
                   <p className="font-mono text-lg">{memberId}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-secondary-foreground/60 mb-1">Household Members</p>
-                  <p className="font-display text-2xl">{householdMembers.length} <span className="text-sm font-sans text-secondary-foreground/60">people</span></p>
+                  <p className="text-sm text-secondary-foreground/60 mb-1">Connections</p>
+                  <p className="font-display text-2xl">{connections.length} <span className="text-sm font-sans text-secondary-foreground/60">people</span></p>
                 </div>
                 <div>
                   <p className="text-sm text-secondary-foreground/60 mb-1">Next Billing</p>
@@ -148,7 +150,7 @@ const Portal = () => {
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="font-display text-2xl mb-4">Quick Actions</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-4">
             {quickActions.map((action) => (
               <Link
                 key={action.href}
@@ -166,33 +168,33 @@ const Portal = () => {
           </div>
         </div>
 
-        {/* Household Overview */}
+        {/* Connections Overview */}
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Household Members */}
+          {/* Connections */}
           <div className="bg-card border border-border/50 rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-display text-xl">Household Members</h3>
-              <Link to="/portal/household" className="text-sm text-primary hover:underline flex items-center gap-1">
+              <h3 className="font-display text-xl">Connections</h3>
+              <Link to="/portal/connections" className="text-sm text-primary hover:underline flex items-center gap-1">
                 Manage <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
-            {householdMembers.length > 0 ? (
+            {connections.length > 0 ? (
               <div className="space-y-4">
-                {householdMembers.slice(0, 3).map((member) => {
-                  const eligible = isEligibleForVisit(member);
+                {connections.slice(0, 3).map((connection) => {
+                  const eligible = isEligibleForVisit(connection);
                   return (
-                    <div key={member.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                    <div key={connection.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <span className="font-display text-sm text-primary">
-                            {member.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                            {connection.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium">{member.name}</p>
+                          <p className="font-medium">{connection.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            Last: {member.last_visit ? format(new Date(member.last_visit), 'MMM d, yyyy') : 'Never'}
+                            Last: {connection.last_visit ? format(new Date(connection.last_visit), 'MMM d, yyyy') : 'Never'}
                           </p>
                         </div>
                       </div>
@@ -210,9 +212,9 @@ const Portal = () => {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p>No household members yet</p>
-                <Link to="/portal/household" className="text-primary hover:underline text-sm">
-                  Add your first member
+                <p>No connections yet</p>
+                <Link to="/portal/connections" className="text-primary hover:underline text-sm">
+                  Add your first connection
                 </Link>
               </div>
             )}

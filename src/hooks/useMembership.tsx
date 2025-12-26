@@ -5,7 +5,7 @@ import { Tables } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 type Membership = Tables<'memberships'>;
-type HouseholdMember = Tables<'household_members'>;
+type Connection = Tables<'connections'>;
 
 export const useMembership = () => {
   const { user, session } = useAuth();
@@ -28,13 +28,13 @@ export const useMembership = () => {
     enabled: !!user?.id,
   });
 
-  const householdQuery = useQuery({
-    queryKey: ['household', membershipQuery.data?.id],
+  const connectionsQuery = useQuery({
+    queryKey: ['connections', membershipQuery.data?.id],
     queryFn: async () => {
       if (!membershipQuery.data?.id) return [];
       
       const { data, error } = await supabase
-        .from('household_members')
+        .from('connections')
         .select('*')
         .eq('membership_id', membershipQuery.data.id)
         .is('removed_at', null)
@@ -66,9 +66,9 @@ export const useMembership = () => {
 
   // Create checkout session
   const createCheckout = useMutation({
-    mutationFn: async (additionalMembers: number = 0) => {
+    mutationFn: async (additionalConnections: number = 0) => {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { additionalMembers },
+        body: { additionalConnections },
         headers: {
           Authorization: `Bearer ${session?.access_token}`,
         },
@@ -109,10 +109,10 @@ export const useMembership = () => {
     },
   });
 
-  // Add household member with Stripe
-  const addHouseholdMember = useMutation({
+  // Add connection with Stripe
+  const addConnection = useMutation({
     mutationFn: async ({ name, email }: { name: string; email?: string }) => {
-      const { data, error } = await supabase.functions.invoke('add-household-member', {
+      const { data, error } = await supabase.functions.invoke('add-connection', {
         body: { name, email },
         headers: {
           Authorization: `Bearer ${session?.access_token}`,
@@ -123,41 +123,41 @@ export const useMembership = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['household'] });
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
       queryClient.invalidateQueries({ queryKey: ['membership'] });
-      toast.success('Household member added! Your subscription has been updated.');
+      toast.success('Connection added! Your subscription has been updated.');
     },
     onError: (error) => {
-      toast.error('Failed to add member: ' + error.message);
+      toast.error('Failed to add connection: ' + error.message);
     },
   });
 
-  const removeHouseholdMember = useMutation({
-    mutationFn: async (memberId: string) => {
+  const removeConnection = useMutation({
+    mutationFn: async (connectionId: string) => {
       const lockUntil = new Date();
       lockUntil.setDate(lockUntil.getDate() + 30);
       
       const { error } = await supabase
-        .from('household_members')
+        .from('connections')
         .update({
           removed_at: new Date().toISOString(),
           slot_locked_until: lockUntil.toISOString(),
         })
-        .eq('id', memberId);
+        .eq('id', connectionId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['household'] });
-      toast.success('Household member removed.');
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      toast.success('Connection removed.');
     },
   });
 
-  // Check if a member is eligible for a visit this week
-  const isEligibleForVisit = (member: HouseholdMember) => {
-    if (!member.last_visit) return true;
+  // Check if a connection is eligible for a visit this week
+  const isEligibleForVisit = (connection: Connection) => {
+    if (!connection.last_visit) return true;
     
-    const lastVisit = new Date(member.last_visit);
+    const lastVisit = new Date(connection.last_visit);
     const now = new Date();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
@@ -168,10 +168,10 @@ export const useMembership = () => {
 
   return {
     membership: membershipQuery.data,
-    householdMembers: householdQuery.data || [],
-    isLoading: membershipQuery.isLoading || householdQuery.isLoading,
-    addHouseholdMember,
-    removeHouseholdMember,
+    connections: connectionsQuery.data || [],
+    isLoading: membershipQuery.isLoading || connectionsQuery.isLoading,
+    addConnection,
+    removeConnection,
     isEligibleForVisit,
     checkSubscription,
     createCheckout,

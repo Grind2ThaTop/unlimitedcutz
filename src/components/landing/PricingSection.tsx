@@ -14,7 +14,7 @@ const PricingSection = () => {
             ONE MEMBERSHIP,<span className="text-primary"> UNLIMITED VALUE</span>
           </h2>
           <p className="text-secondary-foreground/70 text-lg">
-            Straightforward pricing with no hidden fees. Add household members as needed.
+            Straightforward pricing with no hidden fees. Add connections as needed.
           </p>
         </div>
 
@@ -42,7 +42,7 @@ const PricingSection = () => {
 
               <ul className="space-y-3 mb-8">
                 {[
-                  "2 named household members",
+                  "2 connections included",
                   "Unlimited grooming sessions",
                   "1 visit per person per week",
                   "Priority booking access",
@@ -75,7 +75,7 @@ const PricingSection = () => {
                   <Plus className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-display text-2xl">Additional Member</h3>
+                  <h3 className="font-display text-2xl">Additional Connection</h3>
                   <p className="text-sm text-secondary-foreground/60">Per person add-on</p>
                 </div>
               </div>
@@ -87,7 +87,7 @@ const PricingSection = () => {
 
               <ul className="space-y-3 mb-8">
                 {[
-                  "Add any household member",
+                  "Add any connection",
                   "Same unlimited grooming",
                   "Same weekly visit allowance",
                   "No limit on add-ons",
@@ -111,13 +111,13 @@ const PricingSection = () => {
         {/* Example Calculation */}
         <div className="mt-12 max-w-2xl mx-auto">
           <div className="bg-card/5 border border-border/20 rounded-xl p-6">
-            <h4 className="font-display text-xl mb-4 text-center">Example: Family of 4</h4>
+            <h4 className="font-display text-xl mb-4 text-center">Example: 4 Connections</h4>
             <div className="flex items-center justify-between text-secondary-foreground/70">
               <span>Base Membership (2 people)</span>
               <span className="font-semibold">$50</span>
             </div>
             <div className="flex items-center justify-between text-secondary-foreground/70 mt-2">
-              <span>2 Additional Members × $25</span>
+              <span>2 Additional Connections × $25</span>
               <span className="font-semibold">$50</span>
             </div>
             <div className="border-t border-border/20 mt-4 pt-4 flex items-center justify-between">

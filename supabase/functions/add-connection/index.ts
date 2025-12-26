@@ -7,11 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PRICE_HOUSEHOLD_ADDON = "price_1SielF2MG3Cvt2BWhEuLLizU";
+const PRICE_CONNECTION_ADDON = "price_1SielF2MG3Cvt2BWhEuLLizU";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[ADD-HOUSEHOLD-MEMBER] ${step}${detailsStr}`);
+  console.log(`[ADD-CONNECTION] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -42,7 +42,7 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id });
 
     const { name, email } = await req.json();
-    if (!name) throw new Error("Member name is required");
+    if (!name) throw new Error("Connection name is required");
     logStep("Request parsed", { name, email });
 
     // Get membership
@@ -57,20 +57,20 @@ serve(async (req) => {
     }
 
     if (membership.status !== 'active') {
-      throw new Error("Membership must be active to add household members");
+      throw new Error("Membership must be active to add connections");
     }
 
     logStep("Membership found", { membershipId: membership.id, stripeSubscriptionId: membership.stripe_subscription_id });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Update Stripe subscription to add another household add-on
+    // Update Stripe subscription to add another connection add-on
     if (membership.stripe_subscription_id) {
       const subscription = await stripe.subscriptions.retrieve(membership.stripe_subscription_id);
       
       // Find existing add-on item
       const addonItem = subscription.items.data.find(
-        (item: Stripe.SubscriptionItem) => item.price.id === PRICE_HOUSEHOLD_ADDON
+        (item: Stripe.SubscriptionItem) => item.price.id === PRICE_CONNECTION_ADDON
       );
 
       if (addonItem) {
@@ -83,16 +83,16 @@ serve(async (req) => {
         // Add new add-on item
         await stripe.subscriptionItems.create({
           subscription: membership.stripe_subscription_id,
-          price: PRICE_HOUSEHOLD_ADDON,
+          price: PRICE_CONNECTION_ADDON,
           quantity: 1,
         });
         logStep("Added new add-on item");
       }
     }
 
-    // Add household member to database
-    const { data: newMember, error: insertError } = await supabaseClient
-      .from('household_members')
+    // Add connection to database
+    const { data: newConnection, error: insertError } = await supabaseClient
+      .from('connections')
       .insert({
         membership_id: membership.id,
         name,
@@ -103,7 +103,7 @@ serve(async (req) => {
       .single();
 
     if (insertError) {
-      throw new Error(`Failed to add household member: ${insertError.message}`);
+      throw new Error(`Failed to add connection: ${insertError.message}`);
     }
 
     // Update addon amount
@@ -112,11 +112,11 @@ serve(async (req) => {
       .update({ addon_amount: (membership.addon_amount || 0) + 25 })
       .eq('id', membership.id);
 
-    logStep("Household member added", { memberId: newMember.id });
+    logStep("Connection added", { connectionId: newConnection.id });
 
     return new Response(JSON.stringify({ 
       success: true, 
-      member: newMember 
+      connection: newConnection 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

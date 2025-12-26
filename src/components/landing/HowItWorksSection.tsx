@@ -5,7 +5,7 @@ const steps = [
     icon: UserPlus,
     step: "01",
     title: "Sign Up",
-    description: "Create your account and add your household members (up to 2 included in base).",
+    description: "Create your account and add your connections (up to 2 included in base membership).",
   },
   {
     icon: CreditCard,
@@ -17,7 +17,7 @@ const steps = [
     icon: BookOpen,
     step: "03",
     title: "Book",
-    description: "Schedule appointments for any named household member through our booking system.",
+    description: "Schedule appointments for any named connection through our booking system.",
   },
   {
     icon: Scissors,
@@ -40,7 +40,7 @@ const HowItWorksSection = () => {
             GET STARTED IN<span className="text-primary"> MINUTES</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            Four simple steps to unlimited grooming for your household.
+            Four simple steps to unlimited grooming for you and your connections.
           </p>
         </div>
 
