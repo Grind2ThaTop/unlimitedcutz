@@ -189,6 +189,42 @@ export type Database = {
           },
         ]
       }
+      member_ranks: {
+        Row: {
+          created_at: string
+          current_rank: Database["public"]["Enums"]["member_rank"]
+          id: string
+          is_active: boolean
+          last_evaluated_at: string | null
+          personally_enrolled_count: number
+          rank_qualified_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_rank?: Database["public"]["Enums"]["member_rank"]
+          id?: string
+          is_active?: boolean
+          last_evaluated_at?: string | null
+          personally_enrolled_count?: number
+          rank_qualified_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_rank?: Database["public"]["Enums"]["member_rank"]
+          id?: string
+          is_active?: boolean
+          last_evaluated_at?: string | null
+          personally_enrolled_count?: number
+          rank_qualified_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       memberships: {
         Row: {
           addon_amount: number
@@ -449,6 +485,33 @@ export type Database = {
           },
         ]
       }
+      rank_history: {
+        Row: {
+          changed_at: string
+          id: string
+          new_rank: Database["public"]["Enums"]["member_rank"]
+          old_rank: Database["public"]["Enums"]["member_rank"] | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          id?: string
+          new_rank: Database["public"]["Enums"]["member_rank"]
+          old_rank?: Database["public"]["Enums"]["member_rank"] | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          id?: string
+          new_rank?: Database["public"]["Enums"]["member_rank"]
+          old_rank?: Database["public"]["Enums"]["member_rank"] | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -519,6 +582,13 @@ export type Database = {
         | "matrix_membership"
         | "product_commission"
         | "matching_bonus"
+      member_rank:
+        | "rookie"
+        | "hustla"
+        | "grinder"
+        | "influencer"
+        | "executive"
+        | "partner"
       membership_status: "active" | "past_due" | "canceled" | "pending"
       payout_status: "pending" | "paid" | "canceled"
     }
@@ -655,6 +725,14 @@ export const Constants = {
         "matrix_membership",
         "product_commission",
         "matching_bonus",
+      ],
+      member_rank: [
+        "rookie",
+        "hustla",
+        "grinder",
+        "influencer",
+        "executive",
+        "partner",
       ],
       membership_status: ["active", "past_due", "canceled", "pending"],
       payout_status: ["pending", "paid", "canceled"],

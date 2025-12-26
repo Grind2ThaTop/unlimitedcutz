@@ -8,28 +8,32 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { RANKS, RANK_ORDER, type RankId } from "@/lib/rankConfig";
+import { useRank } from "@/hooks/useRank";
+import { cn } from "@/lib/utils";
 
-// Rank configuration with locked totals
-const RANKS = [
-  { name: 'Unranked', paidLevels: 12, positions: 8190, baseTotal: 10237.50, addonTotal: 5118.75 },
-  { name: 'Bronze', paidLevels: 13, positions: 16382, baseTotal: 20477.50, addonTotal: 10238.75 },
-  { name: 'Silver', paidLevels: 13, positions: 16382, baseTotal: 20477.50, addonTotal: 10238.75 },
-  { name: 'Gold', paidLevels: 14, positions: 32766, baseTotal: 40957.50, addonTotal: 20478.75 },
-  { name: 'Platinum', paidLevels: 14, positions: 32766, baseTotal: 40957.50, addonTotal: 20478.75 },
-  { name: 'Diamond', paidLevels: 15, positions: 65534, baseTotal: 81917.50, addonTotal: 40958.75 },
-];
+// Pre-calculated totals for each rank (locked values)
+const RANK_TOTALS: Record<RankId, { baseTotal: number; addonTotal: number }> = {
+  rookie: { baseTotal: 10237.50, addonTotal: 5118.75 },
+  hustla: { baseTotal: 20477.50, addonTotal: 10238.75 },
+  grinder: { baseTotal: 20477.50, addonTotal: 10238.75 },
+  influencer: { baseTotal: 40957.50, addonTotal: 20478.75 },
+  executive: { baseTotal: 81917.50, addonTotal: 40958.75 },
+  partner: { baseTotal: 81917.50, addonTotal: 40958.75 },
+};
 
 const COMMISSION_RATE = "2.50%";
 
 const MatrixCommissionTable = () => {
   const [showAddons, setShowAddons] = useState(false);
+  const { currentRankId } = useRank();
 
   // Generate levels 1-15
   const levels = Array.from({ length: 15 }, (_, i) => i + 1);
 
   // Check if level is eligible for a rank
-  const isEligible = (level: number, rankIndex: number) => {
-    return level <= RANKS[rankIndex].paidLevels;
+  const isEligible = (level: number, rankId: RankId) => {
+    return level <= RANKS[rankId].matrixLevels;
   };
 
   // Get positions for a level (2^level)
@@ -78,11 +82,24 @@ const MatrixCommissionTable = () => {
             <tr className="bg-secondary text-secondary-foreground">
               <th className="py-3 px-3 text-left font-display text-base">Level</th>
               <th className="py-3 px-3 text-center font-display text-base">Positions</th>
-              {RANKS.map((rank) => (
-                <th key={rank.name} className="py-3 px-3 text-center font-display text-base">
-                  {rank.name}
-                </th>
-              ))}
+              {RANK_ORDER.map((rankId) => {
+                const rank = RANKS[rankId];
+                const isCurrentRank = rankId === currentRankId;
+                return (
+                  <th 
+                    key={rankId} 
+                    className={cn(
+                      "py-3 px-3 text-center font-display text-base",
+                      isCurrentRank && "bg-primary/20"
+                    )}
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span>{rank.emoji}</span>
+                      <span className="hidden sm:inline">{rank.name}</span>
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -95,15 +112,24 @@ const MatrixCommissionTable = () => {
                 <td className="py-2.5 px-3 text-center text-muted-foreground">
                   {getPositions(level).toLocaleString()}
                 </td>
-                {RANKS.map((rank, rankIndex) => (
-                  <td key={rank.name} className="py-2.5 px-3 text-center">
-                    {isEligible(level, rankIndex) ? (
-                      <span className="text-primary font-medium">{COMMISSION_RATE}</span>
-                    ) : (
-                      <span className="text-muted-foreground/50">—</span>
-                    )}
-                  </td>
-                ))}
+                {RANK_ORDER.map((rankId) => {
+                  const isCurrentRank = rankId === currentRankId;
+                  return (
+                    <td 
+                      key={rankId} 
+                      className={cn(
+                        "py-2.5 px-3 text-center",
+                        isCurrentRank && "bg-primary/10"
+                      )}
+                    >
+                      {isEligible(level, rankId) ? (
+                        <span className="text-primary font-medium">{COMMISSION_RATE}</span>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
@@ -113,11 +139,20 @@ const MatrixCommissionTable = () => {
               <td className="py-3 px-3 font-display text-base" colSpan={2}>
                 Total (Base $50/mo)
               </td>
-              {RANKS.map((rank) => (
-                <td key={rank.name} className="py-3 px-3 text-center font-display text-base text-primary">
-                  ${rank.baseTotal.toLocaleString()}
-                </td>
-              ))}
+              {RANK_ORDER.map((rankId) => {
+                const isCurrentRank = rankId === currentRankId;
+                return (
+                  <td 
+                    key={rankId} 
+                    className={cn(
+                      "py-3 px-3 text-center font-display text-base text-primary",
+                      isCurrentRank && "bg-primary/20"
+                    )}
+                  >
+                    ${RANK_TOTALS[rankId].baseTotal.toLocaleString()}
+                  </td>
+                );
+              })}
             </tr>
             {/* Add-on Totals Row */}
             {showAddons && (
@@ -125,11 +160,20 @@ const MatrixCommissionTable = () => {
                 <td className="py-3 px-3 font-display text-base" colSpan={2}>
                   Total (Add-on $25/mo)
                 </td>
-                {RANKS.map((rank) => (
-                  <td key={rank.name} className="py-3 px-3 text-center font-display text-base text-blue-500">
-                    ${rank.addonTotal.toLocaleString()}
-                  </td>
-                ))}
+                {RANK_ORDER.map((rankId) => {
+                  const isCurrentRank = rankId === currentRankId;
+                  return (
+                    <td 
+                      key={rankId} 
+                      className={cn(
+                        "py-3 px-3 text-center font-display text-base text-blue-500",
+                        isCurrentRank && "bg-blue-500/20"
+                      )}
+                    >
+                      ${RANK_TOTALS[rankId].addonTotal.toLocaleString()}
+                    </td>
+                  );
+                })}
               </tr>
             )}
             {/* Combined Totals Row */}
@@ -138,11 +182,21 @@ const MatrixCommissionTable = () => {
                 <td className="py-3 px-3 font-display text-base" colSpan={2}>
                   Combined Total
                 </td>
-                {RANKS.map((rank) => (
-                  <td key={rank.name} className="py-3 px-3 text-center font-display text-base text-green-600">
-                    ${(rank.baseTotal + rank.addonTotal).toLocaleString()}
-                  </td>
-                ))}
+                {RANK_ORDER.map((rankId) => {
+                  const isCurrentRank = rankId === currentRankId;
+                  const total = RANK_TOTALS[rankId].baseTotal + RANK_TOTALS[rankId].addonTotal;
+                  return (
+                    <td 
+                      key={rankId} 
+                      className={cn(
+                        "py-3 px-3 text-center font-display text-base text-green-600",
+                        isCurrentRank && "bg-green-500/20"
+                      )}
+                    >
+                      ${total.toLocaleString()}
+                    </td>
+                  );
+                })}
               </tr>
             )}
           </tfoot>
