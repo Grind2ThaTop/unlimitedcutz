@@ -9,8 +9,11 @@ import {
   Zap,
   GitBranch,
   Percent,
-  Info
+  Info,
+  Grid3X3
 } from "lucide-react";
+import MatrixCommissionTable from "@/components/referrals/MatrixCommissionTable";
+import MatrixCalculator from "@/components/referrals/MatrixCalculator";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -104,7 +107,7 @@ const Referrals = () => {
           <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <GitBranch className="w-5 h-5 text-blue-500" />
+                <Grid3X3 className="w-5 h-5 text-blue-500" />
               </div>
               <h3 className="font-display text-lg">Matrix Income</h3>
               <TooltipProvider>
@@ -113,7 +116,7 @@ const Referrals = () => {
                     <Info className="w-4 h-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Everyone joins the same 3×7 forced matrix. When positions under you fill, you get paid automatically through spillover.</p>
+                    <p>Everyone joins the same 2×15 forced matrix. When positions under you fill, you get paid automatically through spillover.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -124,15 +127,15 @@ const Referrals = () => {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Matrix type:</span>
-                <span className="font-medium">3×7 Forced</span>
+                <span className="font-medium">2×15 Forced</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Per placement:</span>
-                <span className="font-medium text-blue-500">$5</span>
+                <span className="text-muted-foreground">Commission rate:</span>
+                <span className="font-medium text-blue-500">2.5%/level</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Max depth:</span>
-                <span className="font-medium">7 levels</span>
+                <span className="font-medium">15 levels</span>
               </div>
             </div>
           </div>
@@ -269,6 +272,25 @@ const Referrals = () => {
               <span className="text-sm">Matching</span>
             </div>
             <span className="font-display text-lg">${earningsSummary.levelBonus.toFixed(0)}</span>
+          </div>
+        </div>
+
+        {/* Matrix Commission Table & Calculator */}
+        <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Grid3X3 className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h2 className="font-display text-xl">Matrix Commissions</h2>
+              <p className="text-sm text-muted-foreground">2×15 forced matrix with rank-based eligibility</p>
+            </div>
+          </div>
+          
+          <MatrixCommissionTable />
+          
+          <div className="mt-8">
+            <MatrixCalculator />
           </div>
         </div>
 
