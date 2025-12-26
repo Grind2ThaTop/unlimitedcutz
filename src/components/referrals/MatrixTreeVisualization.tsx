@@ -16,6 +16,7 @@ interface MatrixNodeData {
   user_id: string;
   parent_id: string | null;
   left_child: string | null;
+  middle_child: string | null;
   right_child: string | null;
   level: number;
   position: number | null;
@@ -121,7 +122,7 @@ const getDisplayName = (node: MatrixNodeData): string => {
   return `Member ${node.id.slice(0, 4)}`;
 };
 
-// Build tree structure from flat node array
+// Build tree structure from flat node array (3-wide)
 const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[][] => {
   if (nodes.length === 0) {
     return generateEmptyTree();
@@ -145,12 +146,12 @@ const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[]
     name: 'You',
   }]);
 
-  // Build subsequent levels using BFS
+  // Build subsequent levels using BFS (3-wide)
   let currentLevelNodes = [userNode];
   let levelNum = 1;
-  const maxLevels = 4;
+  const maxDisplayLevels = 4; // Show 4 levels max for visualization
 
-  while (levelNum < maxLevels && currentLevelNodes.length > 0) {
+  while (levelNum < maxDisplayLevels && currentLevelNodes.length > 0) {
     const nextLevel: DisplayNode[] = [];
     let position = 1;
 
@@ -158,6 +159,28 @@ const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[]
       // Left child
       if (parentNode.left_child) {
         const child = nodeMap.get(parentNode.left_child);
+        if (child) {
+          nextLevel.push({
+            id: child.id,
+            level: levelNum,
+            position: position++,
+            status: 'filled',
+            name: getDisplayName(child),
+            earnings: 1.25,
+          });
+        }
+      } else {
+        nextLevel.push({
+          id: `open-${levelNum}-${position}`,
+          level: levelNum,
+          position: position++,
+          status: 'open',
+        });
+      }
+
+      // Middle child
+      if (parentNode.middle_child) {
+        const child = nodeMap.get(parentNode.middle_child);
         if (child) {
           nextLevel.push({
             id: child.id,
@@ -214,34 +237,38 @@ const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[]
   return levels;
 };
 
-// Generate empty tree structure for display when no data
+// Generate empty tree structure for display when no data (3-wide)
 const generateEmptyTree = (): DisplayNode[][] => {
   const levels: DisplayNode[][] = [];
   
   levels.push([{ id: 'you', level: 0, position: 1, status: 'you', name: 'You' }]);
   
+  // Level 1: 3 positions
   levels.push([
     { id: 'l1-1', level: 1, position: 1, status: 'open' },
     { id: 'l1-2', level: 1, position: 2, status: 'open' },
+    { id: 'l1-3', level: 1, position: 3, status: 'open' },
   ]);
   
+  // Level 2: 9 positions
   levels.push([
     { id: 'l2-1', level: 2, position: 1, status: 'open' },
     { id: 'l2-2', level: 2, position: 2, status: 'open' },
     { id: 'l2-3', level: 2, position: 3, status: 'open' },
     { id: 'l2-4', level: 2, position: 4, status: 'open' },
+    { id: 'l2-5', level: 2, position: 5, status: 'open' },
+    { id: 'l2-6', level: 2, position: 6, status: 'open' },
+    { id: 'l2-7', level: 2, position: 7, status: 'open' },
+    { id: 'l2-8', level: 2, position: 8, status: 'open' },
+    { id: 'l2-9', level: 2, position: 9, status: 'open' },
   ]);
   
-  levels.push([
-    { id: 'l3-1', level: 3, position: 1, status: 'open' },
-    { id: 'l3-2', level: 3, position: 2, status: 'open' },
-    { id: 'l3-3', level: 3, position: 3, status: 'open' },
-    { id: 'l3-4', level: 3, position: 4, status: 'open' },
-    { id: 'l3-5', level: 3, position: 5, status: 'open' },
-    { id: 'l3-6', level: 3, position: 6, status: 'open' },
-    { id: 'l3-7', level: 3, position: 7, status: 'open' },
-    { id: 'l3-8', level: 3, position: 8, status: 'open' },
-  ]);
+  // Level 3: 27 positions
+  const level3: DisplayNode[] = [];
+  for (let i = 1; i <= 27; i++) {
+    level3.push({ id: `l3-${i}`, level: 3, position: i, status: 'open' });
+  }
+  levels.push(level3);
   
   return levels;
 };
@@ -260,7 +287,7 @@ const MatrixTreeVisualization = () => {
       // First get matrix nodes
       const { data: nodes, error: nodesError } = await supabase
         .from('matrix_nodes')
-        .select('id, user_id, parent_id, left_child, right_child, level, position')
+        .select('id, user_id, parent_id, left_child, middle_child, right_child, level, position')
         .order('level', { ascending: true });
       
       if (nodesError) throw nodesError;
@@ -332,7 +359,7 @@ const MatrixTreeVisualization = () => {
           </div>
           <div>
             <h3 className="font-display text-lg">Matrix Tree</h3>
-            <p className="text-xs text-muted-foreground">2×15 structure (showing 4 levels)</p>
+            <p className="text-xs text-muted-foreground">3×8 structure (showing 4 levels)</p>
           </div>
         </div>
         <Button
@@ -353,6 +380,12 @@ const MatrixTreeVisualization = () => {
             </>
           )}
         </Button>
+      </div>
+
+      {/* Matrix Info */}
+      <div className="bg-background/50 rounded-lg p-3 mb-4 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground mb-1">This is a 3×8 Matrix.</p>
+        <p>Everyone joins the same system. When positions under you fill, you earn.</p>
       </div>
 
       {/* Legend */}
@@ -385,13 +418,13 @@ const MatrixTreeVisualization = () => {
             <div key={levelIndex} className="flex flex-col items-center">
               {/* Level label */}
               <span className="text-xs text-muted-foreground mb-2">
-                {levelIndex === 0 ? 'You' : `Level ${levelIndex}`}
+                {levelIndex === 0 ? 'You' : `Level ${levelIndex} (${Math.pow(3, levelIndex)} positions)`}
               </span>
               
               {/* Nodes */}
               <div 
-                className="flex items-center justify-center gap-2 sm:gap-4"
-                style={{ minWidth: `${level.length * 56}px` }}
+                className="flex items-center justify-center gap-1 sm:gap-2"
+                style={{ minWidth: `${level.length * 48}px` }}
               >
                 {level.map((node) => (
                   <TreeNode key={node.id} node={node} />

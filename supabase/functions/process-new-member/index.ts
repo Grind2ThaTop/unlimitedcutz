@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const settings: CompensationSettings = settingsData?.value || {
       fast_start: { level_1: 25, level_2: 10, level_3: 5 },
-      matrix: { per_placement: 5, max_depth: 7 },
+      matrix: { per_placement: 5, max_depth: 8 },
       matching: { level_1_percent: 10, level_2_percent: 5 }
     };
 
@@ -66,7 +66,7 @@ serve(async (req) => {
       });
     }
 
-    // ========== MATRIX PLACEMENT (Forced 3x7 Spillover) ==========
+    // ========== MATRIX PLACEMENT (Forced 3x8 Spillover) ==========
     // Find the next available position in the matrix (top-to-bottom, left-to-right)
     
     // Get the root node (level 1)
