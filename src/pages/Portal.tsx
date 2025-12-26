@@ -10,13 +10,16 @@ import {
   AlertCircle,
   ChevronRight,
   Scissors,
-  User
+  User,
+  Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMembership } from "@/hooks/useMembership";
 import { useReferrals } from "@/hooks/useReferrals";
+import { useRank } from "@/hooks/useRank";
+import RankBadge from "@/components/referrals/RankBadge";
 import { format } from "date-fns";
 import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -54,6 +57,7 @@ const Portal = () => {
   }, []);
 
   const { earningsSummary, totalEarnings } = useReferrals();
+  const { currentRank, isActive } = useRank();
 
   const firstName = profile?.full_name?.split(' ')[0] || 'Member';
   const membershipStatus = membership?.status || 'pending';
@@ -89,6 +93,7 @@ const Portal = () => {
               <div className="flex items-center gap-2 mb-4">
                 <Scissors className="w-6 h-6 text-primary" />
                 <span className="font-display text-xl">MAGNETIC BARBERING</span>
+                <RankBadge rank={currentRank} size="sm" isActive={isActive} />
               </div>
 
               <div className="flex items-center gap-3 mb-6">

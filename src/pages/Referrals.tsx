@@ -12,13 +12,16 @@ import {
   Info,
   Grid3X3,
   BarChart3,
-  ChevronDown
+  ChevronDown,
+  Award
 } from "lucide-react";
 import MatrixCommissionTable from "@/components/referrals/MatrixCommissionTable";
 import MatrixCalculator from "@/components/referrals/MatrixCalculator";
 import FastStartChart from "@/components/referrals/FastStartChart";
 import MatchingBonusChart from "@/components/referrals/MatchingBonusChart";
 import MatrixTreeVisualization from "@/components/referrals/MatrixTreeVisualization";
+import RankProgressCard from "@/components/referrals/RankProgressCard";
+import RankBenefitsTable from "@/components/referrals/RankBenefitsTable";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,6 +45,7 @@ const Referrals = () => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [openSections, setOpenSections] = useState({
+    rank: true,
     compensation: true,
     matrix: false,
     referrals: true,
@@ -105,6 +109,30 @@ const Referrals = () => {
             Earn commissions through Fast Start, Matrix, and Matching Bonuses
           </p>
         </div>
+
+        {/* Rank Progress Section */}
+        <Collapsible open={openSections.rank} onOpenChange={() => toggleSection('rank')} className="mb-8">
+          <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
+            <CollapsibleTrigger className="w-full p-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-purple-500" />
+                </div>
+                <div className="text-left">
+                  <h2 className="font-display text-xl">Your Rank</h2>
+                  <p className="text-sm text-muted-foreground">Progress, benefits, and requirements</p>
+                </div>
+              </div>
+              <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", openSections.rank && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-6 pb-6 space-y-6">
+                <RankProgressCard />
+                <RankBenefitsTable />
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
 
         {/* Compensation Explainer Cards - Collapsible */}
         <div className="grid md:grid-cols-3 gap-3 mb-6">
