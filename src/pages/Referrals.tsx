@@ -10,10 +10,14 @@ import {
   GitBranch,
   Percent,
   Info,
-  Grid3X3
+  Grid3X3,
+  BarChart3
 } from "lucide-react";
 import MatrixCommissionTable from "@/components/referrals/MatrixCommissionTable";
 import MatrixCalculator from "@/components/referrals/MatrixCalculator";
+import FastStartChart from "@/components/referrals/FastStartChart";
+import MatchingBonusChart from "@/components/referrals/MatchingBonusChart";
+import MatrixTreeVisualization from "@/components/referrals/MatrixTreeVisualization";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -273,6 +277,28 @@ const Referrals = () => {
             </div>
             <span className="font-display text-lg">${earningsSummary.levelBonus.toFixed(0)}</span>
           </div>
+        </div>
+
+        {/* Compensation Visualizations */}
+        <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-xl">Compensation Overview</h2>
+              <p className="text-sm text-muted-foreground">Visual breakdown of all earning opportunities</p>
+            </div>
+          </div>
+          
+          {/* Charts Grid */}
+          <div className="grid lg:grid-cols-2 gap-6 mb-6">
+            <FastStartChart />
+            <MatchingBonusChart />
+          </div>
+          
+          {/* Matrix Tree */}
+          <MatrixTreeVisualization />
         </div>
 
         {/* Matrix Commission Table & Calculator */}
