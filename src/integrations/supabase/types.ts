@@ -506,6 +506,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_matrix_ancestor: {
+        Args: { _node_user_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "member" | "admin"

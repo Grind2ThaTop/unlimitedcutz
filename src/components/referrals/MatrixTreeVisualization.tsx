@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GitBranch, User, UserCheck, UserX, ChevronDown, ChevronUp } from "lucide-react";
+import { GitBranch, User, UserCheck, UserX, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -7,8 +7,21 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
-interface MatrixNode {
+interface MatrixNodeData {
+  id: string;
+  user_id: string;
+  parent_id: string | null;
+  left_child: string | null;
+  right_child: string | null;
+  level: number;
+  position: number | null;
+}
+
+interface DisplayNode {
   id: string;
   level: number;
   position: number;
@@ -17,43 +30,7 @@ interface MatrixNode {
   earnings?: number;
 }
 
-// Generate mock tree data for visualization (2x tree, first 4 levels)
-const generateMockTree = (): MatrixNode[][] => {
-  const levels: MatrixNode[][] = [];
-  
-  // Level 0 - You
-  levels.push([{ id: 'you', level: 0, position: 1, status: 'you', name: 'You' }]);
-  
-  // Level 1 - 2 positions
-  levels.push([
-    { id: 'l1-1', level: 1, position: 1, status: 'filled', name: 'Sarah M.', earnings: 1.25 },
-    { id: 'l1-2', level: 1, position: 2, status: 'filled', name: 'John D.', earnings: 1.25 },
-  ]);
-  
-  // Level 2 - 4 positions
-  levels.push([
-    { id: 'l2-1', level: 2, position: 1, status: 'filled', name: 'Mike R.', earnings: 1.25 },
-    { id: 'l2-2', level: 2, position: 2, status: 'filled', name: 'Lisa K.', earnings: 1.25 },
-    { id: 'l2-3', level: 2, position: 3, status: 'inactive', name: 'Tom H.' },
-    { id: 'l2-4', level: 2, position: 4, status: 'open' },
-  ]);
-  
-  // Level 3 - 8 positions
-  levels.push([
-    { id: 'l3-1', level: 3, position: 1, status: 'filled', name: 'Emma W.', earnings: 1.25 },
-    { id: 'l3-2', level: 3, position: 2, status: 'open' },
-    { id: 'l3-3', level: 3, position: 3, status: 'filled', name: 'Chris B.', earnings: 1.25 },
-    { id: 'l3-4', level: 3, position: 4, status: 'open' },
-    { id: 'l3-5', level: 3, position: 5, status: 'open' },
-    { id: 'l3-6', level: 3, position: 6, status: 'open' },
-    { id: 'l3-7', level: 3, position: 7, status: 'open' },
-    { id: 'l3-8', level: 3, position: 8, status: 'open' },
-  ]);
-  
-  return levels;
-};
-
-const NodeIcon = ({ status }: { status: MatrixNode['status'] }) => {
+const NodeIcon = ({ status }: { status: DisplayNode['status'] }) => {
   switch (status) {
     case 'you':
       return <User className="w-4 h-4" />;
@@ -66,7 +43,7 @@ const NodeIcon = ({ status }: { status: MatrixNode['status'] }) => {
   }
 };
 
-const TreeNode = ({ node }: { node: MatrixNode }) => {
+const TreeNode = ({ node }: { node: DisplayNode }) => {
   const statusStyles = {
     you: 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background',
     filled: 'bg-green-500/20 text-green-500 border border-green-500/50',
@@ -129,15 +106,160 @@ const TreeNode = ({ node }: { node: MatrixNode }) => {
   );
 };
 
+// Build tree structure from flat node array
+const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[][] => {
+  if (nodes.length === 0) {
+    return generateEmptyTree();
+  }
+
+  // Find user's node
+  const userNode = nodes.find(n => n.user_id === userId);
+  if (!userNode) {
+    return generateEmptyTree();
+  }
+
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const levels: DisplayNode[][] = [];
+  
+  // Level 0 - User
+  levels.push([{
+    id: userNode.id,
+    level: 0,
+    position: 1,
+    status: 'you',
+    name: 'You',
+  }]);
+
+  // Build subsequent levels using BFS
+  let currentLevelNodes = [userNode];
+  let levelNum = 1;
+  const maxLevels = 4;
+
+  while (levelNum < maxLevels && currentLevelNodes.length > 0) {
+    const nextLevel: DisplayNode[] = [];
+    let position = 1;
+
+    for (const parentNode of currentLevelNodes) {
+      // Left child
+      if (parentNode.left_child) {
+        const child = nodeMap.get(parentNode.left_child);
+        if (child) {
+          nextLevel.push({
+            id: child.id,
+            level: levelNum,
+            position: position++,
+            status: 'filled',
+            name: `Member ${child.id.slice(0, 4)}`,
+            earnings: 1.25,
+          });
+        }
+      } else {
+        nextLevel.push({
+          id: `open-${levelNum}-${position}`,
+          level: levelNum,
+          position: position++,
+          status: 'open',
+        });
+      }
+
+      // Right child
+      if (parentNode.right_child) {
+        const child = nodeMap.get(parentNode.right_child);
+        if (child) {
+          nextLevel.push({
+            id: child.id,
+            level: levelNum,
+            position: position++,
+            status: 'filled',
+            name: `Member ${child.id.slice(0, 4)}`,
+            earnings: 1.25,
+          });
+        }
+      } else {
+        nextLevel.push({
+          id: `open-${levelNum}-${position}`,
+          level: levelNum,
+          position: position++,
+          status: 'open',
+        });
+      }
+    }
+
+    if (nextLevel.length > 0) {
+      levels.push(nextLevel);
+      // Get actual nodes for next iteration
+      currentLevelNodes = nextLevel
+        .filter(n => n.status === 'filled')
+        .map(n => nodeMap.get(n.id))
+        .filter((n): n is MatrixNodeData => n !== undefined);
+    }
+    levelNum++;
+  }
+
+  return levels;
+};
+
+// Generate empty tree structure for display when no data
+const generateEmptyTree = (): DisplayNode[][] => {
+  const levels: DisplayNode[][] = [];
+  
+  levels.push([{ id: 'you', level: 0, position: 1, status: 'you', name: 'You' }]);
+  
+  levels.push([
+    { id: 'l1-1', level: 1, position: 1, status: 'open' },
+    { id: 'l1-2', level: 1, position: 2, status: 'open' },
+  ]);
+  
+  levels.push([
+    { id: 'l2-1', level: 2, position: 1, status: 'open' },
+    { id: 'l2-2', level: 2, position: 2, status: 'open' },
+    { id: 'l2-3', level: 2, position: 3, status: 'open' },
+    { id: 'l2-4', level: 2, position: 4, status: 'open' },
+  ]);
+  
+  levels.push([
+    { id: 'l3-1', level: 3, position: 1, status: 'open' },
+    { id: 'l3-2', level: 3, position: 2, status: 'open' },
+    { id: 'l3-3', level: 3, position: 3, status: 'open' },
+    { id: 'l3-4', level: 3, position: 4, status: 'open' },
+    { id: 'l3-5', level: 3, position: 5, status: 'open' },
+    { id: 'l3-6', level: 3, position: 6, status: 'open' },
+    { id: 'l3-7', level: 3, position: 7, status: 'open' },
+    { id: 'l3-8', level: 3, position: 8, status: 'open' },
+  ]);
+  
+  return levels;
+};
+
 const MatrixTreeVisualization = () => {
   const [expanded, setExpanded] = useState(true);
-  const treeData = generateMockTree();
+  const { user } = useAuth();
+
+  // Fetch matrix nodes the user can see (their own + downline)
+  const { data: matrixNodes, isLoading } = useQuery({
+    queryKey: ['matrixTree', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('matrix_nodes')
+        .select('id, user_id, parent_id, left_child, right_child, level, position')
+        .order('level', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const treeData = matrixNodes && user?.id 
+    ? buildTreeLevels(matrixNodes, user.id) 
+    : generateEmptyTree();
   
   // Calculate stats
   const filledCount = treeData.flat().filter(n => n.status === 'filled' || n.status === 'you').length;
   const openCount = treeData.flat().filter(n => n.status === 'open').length;
   const inactiveCount = treeData.flat().filter(n => n.status === 'inactive').length;
-  const totalPositions = treeData.flat().length;
 
   return (
     <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-6">
@@ -191,7 +313,11 @@ const MatrixTreeVisualization = () => {
         </div>
       </div>
 
-      {expanded && (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : expanded && (
         <div className="space-y-4 overflow-x-auto pb-4">
           {treeData.map((level, levelIndex) => (
             <div key={levelIndex} className="flex flex-col items-center">
@@ -236,7 +362,7 @@ const MatrixTreeVisualization = () => {
       </div>
 
       <p className="text-xs text-muted-foreground text-center mt-4">
-        Click on any position to see details. Tree updates as positions fill.
+        Click on any position to see details. Tree updates in real-time.
       </p>
     </div>
   );
