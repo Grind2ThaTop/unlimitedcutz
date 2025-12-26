@@ -17,6 +17,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMembership } from "@/hooks/useMembership";
 import { useReferrals } from "@/hooks/useReferrals";
 import { format } from "date-fns";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 const quickActions = [
   { icon: Calendar, label: "Book Appointment", href: "/portal/booking", color: "bg-blue-500/10 text-blue-500" },
@@ -28,7 +31,26 @@ const quickActions = [
 
 const Portal = () => {
   const { profile } = useAuth();
-  const { membership, householdMembers, isEligibleForVisit } = useMembership();
+  const { membership, householdMembers, isEligibleForVisit, checkSubscription, createCheckout } = useMembership();
+  const [searchParams] = useSearchParams();
+
+  // Check for success/cancel from Stripe checkout
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success('Payment successful! Your membership is now active.');
+      checkSubscription.mutate();
+    } else if (searchParams.get('canceled') === 'true') {
+      toast.info('Checkout was canceled.');
+    }
+  }, [searchParams]);
+
+  // Refresh subscription status on mount
+  useEffect(() => {
+    if (membership) {
+      checkSubscription.mutate();
+    }
+  }, []);
+
   const { earningsSummary, totalEarnings } = useReferrals();
 
   const firstName = profile?.full_name?.split(' ')[0] || 'Member';

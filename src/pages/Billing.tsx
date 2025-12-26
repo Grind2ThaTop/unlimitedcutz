@@ -4,14 +4,35 @@ import {
   AlertCircle, 
   CheckCircle,
   Calendar,
-  Receipt
+  Receipt,
+  ExternalLink,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMembership } from "@/hooks/useMembership";
 import { format } from "date-fns";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 const Billing = () => {
-  const { membership, isLoading } = useMembership();
+  const { membership, isLoading, openCustomerPortal, checkSubscription, createCheckout } = useMembership();
+  const [searchParams] = useSearchParams();
+
+  // Check for success/cancel from Stripe
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast.success('Payment successful! Your membership is now active.');
+      checkSubscription.mutate();
+    } else if (searchParams.get('canceled') === 'true') {
+      toast.info('Payment was canceled.');
+    }
+  }, [searchParams]);
+
+  // Refresh subscription status on mount
+  useEffect(() => {
+    checkSubscription.mutate();
+  }, []);
 
   const status = membership?.status || 'pending';
   const baseAmount = Number(membership?.base_amount || 50);
@@ -21,11 +42,19 @@ const Billing = () => {
     ? format(new Date(membership.current_period_end), 'MMMM d, yyyy')
     : 'N/A';
 
+  const handleManageBilling = () => {
+    openCustomerPortal.mutate();
+  };
+
+  const handleStartSubscription = () => {
+    createCheckout.mutate(0);
+  };
+
   if (isLoading) {
     return (
       <PortalLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       </PortalLayout>
     );
@@ -71,9 +100,33 @@ const Billing = () => {
                 </div>
               </div>
             </div>
-            <Button variant="heroOutline" size="sm">
-              Cancel Subscription
-            </Button>
+            {status === 'active' || status === 'past_due' ? (
+              <Button 
+                variant="heroOutline" 
+                size="sm"
+                onClick={handleManageBilling}
+                disabled={openCustomerPortal.isPending}
+              >
+                {openCustomerPortal.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                )}
+                Manage Subscription
+              </Button>
+            ) : (
+              <Button 
+                variant="hero" 
+                size="sm"
+                onClick={handleStartSubscription}
+                disabled={createCheckout.isPending}
+              >
+                {createCheckout.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                Start Subscription
+              </Button>
+            )}
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -96,7 +149,9 @@ const Billing = () => {
             </div>
             <div>
               <p className="text-sm text-secondary-foreground/60 mb-1">Payment Method</p>
-              <p className="font-medium">Not configured</p>
+              <p className="font-medium">
+                {status === 'active' ? 'Configured' : 'Not configured'}
+              </p>
             </div>
           </div>
         </div>
@@ -105,7 +160,16 @@ const Billing = () => {
         <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-xl">Payment Method</h2>
-            <Button variant="ghost" size="sm">Add Card</Button>
+            {(status === 'active' || status === 'past_due') && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleManageBilling}
+                disabled={openCustomerPortal.isPending}
+              >
+                Update Card
+              </Button>
+            )}
           </div>
 
           <div className="flex items-center gap-4 bg-muted/30 rounded-lg p-4">
@@ -113,25 +177,44 @@ const Billing = () => {
               <CreditCard className="w-6 h-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-medium text-muted-foreground">No payment method on file</p>
-              <p className="text-sm text-muted-foreground">Add a card to activate your subscription</p>
+              {status === 'active' ? (
+                <>
+                  <p className="font-medium">Card on file</p>
+                  <p className="text-sm text-muted-foreground">Manage via Stripe portal</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium text-muted-foreground">No payment method on file</p>
+                  <p className="text-sm text-muted-foreground">Add a card to activate your subscription</p>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Invoice History */}
         <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
-          <div className="p-6 border-b border-border/50">
+          <div className="p-6 border-b border-border/50 flex items-center justify-between">
             <h2 className="font-display text-xl flex items-center gap-2">
               <Receipt className="w-5 h-5 text-primary" />
               Invoice History
             </h2>
+            {(status === 'active' || status === 'past_due') && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleManageBilling}
+                disabled={openCustomerPortal.isPending}
+              >
+                View All Invoices
+              </Button>
+            )}
           </div>
 
           <div className="p-8 text-center text-muted-foreground">
             <Receipt className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No invoices yet</p>
-            <p className="text-sm">Your payment history will appear here</p>
+            <p>View invoices in billing portal</p>
+            <p className="text-sm">Click "Manage Subscription" to see payment history</p>
           </div>
         </div>
 
