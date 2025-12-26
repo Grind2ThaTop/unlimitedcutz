@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useMembership } from "@/hooks/useMembership";
+import { useReferrals } from "@/hooks/useReferrals";
+import { format } from "date-fns";
 
 const quickActions = [
   { icon: Calendar, label: "Book Appointment", href: "/portal/booking", color: "bg-blue-500/10 text-blue-500" },
@@ -23,18 +27,26 @@ const quickActions = [
 ];
 
 const Portal = () => {
-  // Mock data - would come from Supabase
-  const membershipStatus = "active";
-  const nextBillingDate = "January 15, 2025";
-  const totalMonthly = "$75";
-  const memberId = "MAG-2024-001234";
+  const { profile } = useAuth();
+  const { membership, householdMembers, isEligibleForVisit } = useMembership();
+  const { earningsSummary, totalEarnings } = useReferrals();
+
+  const firstName = profile?.full_name?.split(' ')[0] || 'Member';
+  const membershipStatus = membership?.status || 'pending';
+  const memberId = membership?.membership_id || 'N/A';
+  const totalMonthly = membership 
+    ? `$${(Number(membership.base_amount) + Number(membership.addon_amount)).toFixed(0)}`
+    : '$0';
+  const nextBillingDate = membership?.current_period_end 
+    ? format(new Date(membership.current_period_end), 'MMMM d, yyyy')
+    : 'N/A';
 
   return (
     <PortalLayout>
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-display text-3xl lg:text-4xl mb-2">Welcome Back, John</h1>
+          <h1 className="font-display text-3xl lg:text-4xl mb-2">Welcome Back, {firstName}</h1>
           <p className="text-muted-foreground">Manage your membership and household</p>
         </div>
 
@@ -57,16 +69,19 @@ const Portal = () => {
 
               <div className="flex items-center gap-3 mb-6">
                 {membershipStatus === "active" ? (
-                  <>
-                    <div className="flex items-center gap-2 bg-green-500/20 text-green-400 px-3 py-1.5 rounded-full">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm font-medium">Active Member</span>
-                    </div>
-                  </>
-                ) : (
+                  <div className="flex items-center gap-2 bg-green-500/20 text-green-400 px-3 py-1.5 rounded-full">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Active Member</span>
+                  </div>
+                ) : membershipStatus === "past_due" ? (
                   <div className="flex items-center gap-2 bg-red-500/20 text-red-400 px-3 py-1.5 rounded-full">
                     <AlertCircle className="w-4 h-4" />
                     <span className="text-sm font-medium">Past Due</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-amber-500/20 text-amber-400 px-3 py-1.5 rounded-full">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium capitalize">{membershipStatus}</span>
                   </div>
                 )}
               </div>
@@ -78,7 +93,7 @@ const Portal = () => {
                 </div>
                 <div>
                   <p className="text-sm text-secondary-foreground/60 mb-1">Household Members</p>
-                  <p className="font-display text-2xl">3 <span className="text-sm font-sans text-secondary-foreground/60">people</span></p>
+                  <p className="font-display text-2xl">{householdMembers.length} <span className="text-sm font-sans text-secondary-foreground/60">people</span></p>
                 </div>
                 <div>
                   <p className="text-sm text-secondary-foreground/60 mb-1">Next Billing</p>
@@ -140,34 +155,45 @@ const Portal = () => {
               </Link>
             </div>
 
-            <div className="space-y-4">
-              {[
-                { name: "John Doe", status: "eligible", lastVisit: "Dec 20, 2024" },
-                { name: "Jane Doe", status: "used", lastVisit: "Dec 23, 2024" },
-                { name: "Jake Doe", status: "eligible", lastVisit: "Dec 18, 2024" },
-              ].map((member, i) => (
-                <div key={i} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="font-display text-sm text-primary">
-                        {member.name.split(" ").map(n => n[0]).join("")}
-                      </span>
+            {householdMembers.length > 0 ? (
+              <div className="space-y-4">
+                {householdMembers.slice(0, 3).map((member) => {
+                  const eligible = isEligibleForVisit(member);
+                  return (
+                    <div key={member.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="font-display text-sm text-primary">
+                            {member.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Last: {member.last_visit ? format(new Date(member.last_visit), 'MMM d, yyyy') : 'Never'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        eligible 
+                          ? "bg-green-500/10 text-green-600" 
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {eligible ? "Eligible" : "Used This Week"}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-xs text-muted-foreground">Last: {member.lastVisit}</p>
-                    </div>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    member.status === "eligible" 
-                      ? "bg-green-500/10 text-green-600" 
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    {member.status === "eligible" ? "Eligible" : "Used This Week"}
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No household members yet</p>
+                <Link to="/portal/household" className="text-primary hover:underline text-sm">
+                  Add your first member
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Earnings Snapshot */}
@@ -182,25 +208,25 @@ const Portal = () => {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm text-muted-foreground mb-1">Fast Start Bonuses</p>
-                <p className="font-display text-2xl text-primary">$50</p>
+                <p className="font-display text-2xl text-primary">${earningsSummary.fastStart.toFixed(0)}</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm text-muted-foreground mb-1">Level Bonuses</p>
-                <p className="font-display text-2xl text-primary">$75</p>
+                <p className="font-display text-2xl text-primary">${earningsSummary.levelBonus.toFixed(0)}</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm text-muted-foreground mb-1">Matrix Commissions</p>
-                <p className="font-display text-2xl text-primary">$120</p>
+                <p className="font-display text-2xl text-primary">${earningsSummary.matrixMembership.toFixed(0)}</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-4">
                 <p className="text-sm text-muted-foreground mb-1">Product Sales</p>
-                <p className="font-display text-2xl text-primary">$35</p>
+                <p className="font-display text-2xl text-primary">${earningsSummary.productCommission.toFixed(0)}</p>
               </div>
             </div>
 
             <div className="flex items-center justify-between bg-secondary rounded-lg p-4">
               <span className="text-secondary-foreground font-medium">Total Earnings</span>
-              <span className="font-display text-3xl text-primary">$280</span>
+              <span className="font-display text-3xl text-primary">${totalEarnings.toFixed(0)}</span>
             </div>
           </div>
         </div>

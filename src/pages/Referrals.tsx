@@ -5,20 +5,29 @@ import {
   Users, 
   DollarSign, 
   TrendingUp,
-  ChevronDown,
-  ChevronRight,
   Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useReferrals } from "@/hooks/useReferrals";
+import { format } from "date-fns";
 
 const Referrals = () => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-  const referralLink = "https://magnetic.barber/ref/johndoe123";
-  const referralCode = "JOHNDOE123";
+  
+  const {
+    commissions,
+    directReferrals,
+    earningsSummary,
+    totalEarnings,
+    pendingEarnings,
+    referralLink,
+    referralCode,
+    isLoading,
+  } = useReferrals();
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -27,14 +36,21 @@ const Referrals = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Mock matrix data
-  const matrixLevels = [
-    { level: 1, count: 3, active: 3, earnings: "$90" },
-    { level: 2, count: 7, active: 6, earnings: "$48" },
-    { level: 3, count: 12, active: 10, earnings: "$25" },
-    { level: 4, count: 8, active: 5, earnings: "$7.50" },
-    { level: 5, count: 4, active: 2, earnings: "$2" },
-  ];
+  // Group commissions by type
+  const fastStartCommissions = commissions.filter(c => c.commission_type === 'fast_start');
+  const levelBonusCommissions = commissions.filter(c => c.commission_type === 'level_bonus');
+  const matrixCommissions = commissions.filter(c => c.commission_type === 'matrix_membership');
+  const productCommissions = commissions.filter(c => c.commission_type === 'product_commission');
+
+  if (isLoading) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>
@@ -54,26 +70,34 @@ const Referrals = () => {
             <h2 className="font-display text-xl">Your Referral Link</h2>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 bg-card/10 rounded-lg px-4 py-3 font-mono text-sm truncate">
-              {referralLink}
-            </div>
-            <Button 
-              variant="hero" 
-              onClick={() => copyToClipboard(referralLink)}
-              className="shrink-0"
-            >
-              {copied ? <Check className="w-5 h-5 mr-2" /> : <Copy className="w-5 h-5 mr-2" />}
-              {copied ? "Copied!" : "Copy Link"}
-            </Button>
-          </div>
+          {referralLink ? (
+            <>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 bg-card/10 rounded-lg px-4 py-3 font-mono text-sm truncate">
+                  {referralLink}
+                </div>
+                <Button 
+                  variant="hero" 
+                  onClick={() => copyToClipboard(referralLink)}
+                  className="shrink-0"
+                >
+                  {copied ? <Check className="w-5 h-5 mr-2" /> : <Copy className="w-5 h-5 mr-2" />}
+                  {copied ? "Copied!" : "Copy Link"}
+                </Button>
+              </div>
 
-          <div className="mt-4 flex items-center gap-4">
-            <span className="text-secondary-foreground/60 text-sm">Code:</span>
-            <code className="bg-card/10 px-3 py-1 rounded text-primary font-mono">
-              {referralCode}
-            </code>
-          </div>
+              <div className="mt-4 flex items-center gap-4">
+                <span className="text-secondary-foreground/60 text-sm">Code:</span>
+                <code className="bg-card/10 px-3 py-1 rounded text-primary font-mono">
+                  {referralCode}
+                </code>
+              </div>
+            </>
+          ) : (
+            <p className="text-secondary-foreground/60">
+              Your referral link will be available once your profile is set up.
+            </p>
+          )}
         </div>
 
         {/* Stats Overview */}
@@ -83,9 +107,9 @@ const Referrals = () => {
               <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
                 <Users className="w-5 h-5 text-blue-500" />
               </div>
-              <span className="text-muted-foreground text-sm">Total Referrals</span>
+              <span className="text-muted-foreground text-sm">Direct Referrals</span>
             </div>
-            <p className="font-display text-3xl">34</p>
+            <p className="font-display text-3xl">{directReferrals.length}</p>
           </div>
 
           <div className="bg-card border border-border/50 rounded-xl p-6">
@@ -93,9 +117,9 @@ const Referrals = () => {
               <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
                 <Check className="w-5 h-5 text-green-500" />
               </div>
-              <span className="text-muted-foreground text-sm">Active Members</span>
+              <span className="text-muted-foreground text-sm">Active Network</span>
             </div>
-            <p className="font-display text-3xl">26</p>
+            <p className="font-display text-3xl">{directReferrals.length}</p>
           </div>
 
           <div className="bg-card border border-border/50 rounded-xl p-6">
@@ -103,9 +127,9 @@ const Referrals = () => {
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <DollarSign className="w-5 h-5 text-primary" />
               </div>
-              <span className="text-muted-foreground text-sm">This Month</span>
+              <span className="text-muted-foreground text-sm">Pending</span>
             </div>
-            <p className="font-display text-3xl text-primary">$280</p>
+            <p className="font-display text-3xl text-primary">${pendingEarnings.toFixed(0)}</p>
           </div>
 
           <div className="bg-card border border-border/50 rounded-xl p-6">
@@ -115,48 +139,40 @@ const Referrals = () => {
               </div>
               <span className="text-muted-foreground text-sm">All Time</span>
             </div>
-            <p className="font-display text-3xl">$1,845</p>
+            <p className="font-display text-3xl">${totalEarnings.toFixed(0)}</p>
           </div>
         </div>
 
-        {/* Matrix Visualization */}
-        <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
-          <h2 className="font-display text-xl mb-6 flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            Your Matrix (5 Levels)
-          </h2>
+        {/* Direct Referrals List */}
+        {directReferrals.length > 0 && (
+          <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
+            <h2 className="font-display text-xl mb-6 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Your Direct Referrals
+            </h2>
 
-          <div className="space-y-3">
-            {matrixLevels.map((level) => (
-              <div 
-                key={level.level}
-                className="flex items-center gap-4 bg-muted/30 rounded-lg p-4"
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="font-display text-primary">{level.level}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">Level {level.level}</span>
-                    <span className="font-display text-lg text-primary">{level.earnings}</span>
+            <div className="space-y-3">
+              {directReferrals.map((referral) => (
+                <div 
+                  key={referral.id}
+                  className="flex items-center gap-4 bg-muted/30 rounded-lg p-4"
+                >
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="font-display text-primary text-sm">
+                      {referral.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{level.count} total</span>
-                    <span className="text-green-600">{level.active} active</span>
-                    <span className="text-muted-foreground/50">{level.count - level.active} inactive</span>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${(level.active / level.count) * 100}%` }}
-                    />
+                  <div className="flex-1">
+                    <p className="font-medium">{referral.full_name || 'Unknown'}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Joined {format(new Date(referral.created_at), 'MMM d, yyyy')}
+                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Earnings Breakdown */}
         <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
@@ -171,47 +187,91 @@ const Referrals = () => {
             </div>
 
             <TabsContent value="faststart" className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-border/50">
-                  <div>
-                    <p className="font-medium">Sarah Johnson</p>
-                    <p className="text-sm text-muted-foreground">Level 1 • Dec 22, 2024</p>
-                  </div>
-                  <span className="font-display text-lg text-primary">+$25</span>
+              {fastStartCommissions.length > 0 ? (
+                <div className="space-y-4">
+                  {fastStartCommissions.map((commission) => (
+                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                      <div>
+                        <p className="font-medium">{commission.description || 'Fast Start Bonus'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center justify-between py-3 border-b border-border/50">
-                  <div>
-                    <p className="font-medium">Mike Chen</p>
-                    <p className="text-sm text-muted-foreground">Level 1 • Dec 20, 2024</p>
-                  </div>
-                  <span className="font-display text-lg text-primary">+$25</span>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No fast start bonuses yet. Refer someone to earn!
                 </div>
-                <div className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="font-medium">Tom Williams</p>
-                    <p className="text-sm text-muted-foreground">Level 2 • Dec 18, 2024</p>
-                  </div>
-                  <span className="font-display text-lg text-primary">+$10</span>
-                </div>
-              </div>
+              )}
             </TabsContent>
 
             <TabsContent value="level" className="p-6">
-              <div className="text-center py-8 text-muted-foreground">
-                Monthly level bonuses will appear here after the billing cycle.
-              </div>
+              {levelBonusCommissions.length > 0 ? (
+                <div className="space-y-4">
+                  {levelBonusCommissions.map((commission) => (
+                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                      <div>
+                        <p className="font-medium">{commission.description || 'Level Bonus'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Monthly level bonuses will appear here after the billing cycle.
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="matrix" className="p-6">
-              <div className="text-center py-8 text-muted-foreground">
-                Matrix commission details for the current period.
-              </div>
+              {matrixCommissions.length > 0 ? (
+                <div className="space-y-4">
+                  {matrixCommissions.map((commission) => (
+                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                      <div>
+                        <p className="font-medium">{commission.description || 'Matrix Commission'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Matrix commission details for the current period.
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="products" className="p-6">
-              <div className="text-center py-8 text-muted-foreground">
-                Product commission history will appear here.
-              </div>
+              {productCommissions.length > 0 ? (
+                <div className="space-y-4">
+                  {productCommissions.map((commission) => (
+                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                      <div>
+                        <p className="font-medium">{commission.description || 'Product Commission'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Product commission history will appear here.
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
