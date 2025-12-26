@@ -15,6 +15,7 @@ import Store from "./pages/Store";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AdminRanks from "./pages/admin/AdminRanks";
+import AdminMatrixAudit from "./pages/admin/AdminMatrixAudit";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/portal/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
             {/* Admin Routes */}
             <Route path="/portal/admin/ranks" element={<AdminRoute><AdminRanks /></AdminRoute>} />
+            <Route path="/portal/admin/matrix-audit" element={<AdminRoute><AdminMatrixAudit /></AdminRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

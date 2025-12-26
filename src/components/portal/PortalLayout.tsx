@@ -15,6 +15,7 @@ import {
   ChevronRight,
   User,
   Shield,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +38,7 @@ const navItems = [
 
 const adminNavItems = [
   { icon: Shield, label: "Rank Management", href: "/portal/admin/ranks" },
+  { icon: Activity, label: "Matrix Audit", href: "/portal/admin/matrix-audit" },
 ];
 
 const PortalLayout = ({ children }: PortalLayoutProps) => {
