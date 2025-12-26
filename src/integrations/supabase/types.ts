@@ -129,7 +129,12 @@ export type Database = {
           level: number
           middle_child: string | null
           parent_id: string | null
+          placed_at: string | null
+          placement_source:
+            | Database["public"]["Enums"]["placement_source"]
+            | null
           position: number | null
+          position_index: number | null
           right_child: string | null
           sponsor_id: string | null
           user_id: string
@@ -141,7 +146,12 @@ export type Database = {
           level?: number
           middle_child?: string | null
           parent_id?: string | null
+          placed_at?: string | null
+          placement_source?:
+            | Database["public"]["Enums"]["placement_source"]
+            | null
           position?: number | null
+          position_index?: number | null
           right_child?: string | null
           sponsor_id?: string | null
           user_id: string
@@ -153,7 +163,12 @@ export type Database = {
           level?: number
           middle_child?: string | null
           parent_id?: string | null
+          placed_at?: string | null
+          placement_source?:
+            | Database["public"]["Enums"]["placement_source"]
+            | null
           position?: number | null
+          position_index?: number | null
           right_child?: string | null
           sponsor_id?: string | null
           user_id?: string
@@ -356,6 +371,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      placement_logs: {
+        Row: {
+          checks_passed: Json
+          created_at: string
+          id: string
+          level: number
+          matrix_node_id: string
+          placed_under_user_id: string | null
+          placement_source: Database["public"]["Enums"]["placement_source"]
+          position: number | null
+          position_index: number
+          related_events: Json | null
+          sponsor_id: string | null
+          user_id: string
+        }
+        Insert: {
+          checks_passed?: Json
+          created_at?: string
+          id?: string
+          level: number
+          matrix_node_id: string
+          placed_under_user_id?: string | null
+          placement_source: Database["public"]["Enums"]["placement_source"]
+          position?: number | null
+          position_index: number
+          related_events?: Json | null
+          sponsor_id?: string | null
+          user_id: string
+        }
+        Update: {
+          checks_passed?: Json
+          created_at?: string
+          id?: string
+          level?: number
+          matrix_node_id?: string
+          placed_under_user_id?: string | null
+          placement_source?: Database["public"]["Enums"]["placement_source"]
+          position?: number | null
+          position_index?: number
+          related_events?: Json | null
+          sponsor_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placement_logs_matrix_node_id_fkey"
+            columns: ["matrix_node_id"]
+            isOneToOne: false
+            referencedRelation: "matrix_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_orders: {
         Row: {
@@ -591,6 +659,7 @@ export type Database = {
         | "partner"
       membership_status: "active" | "past_due" | "canceled" | "pending"
       payout_status: "pending" | "paid" | "canceled"
+      placement_source: "direct_signup" | "spillover" | "admin_placement"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -736,6 +805,7 @@ export const Constants = {
       ],
       membership_status: ["active", "past_due", "canceled", "pending"],
       payout_status: ["pending", "paid", "canceled"],
+      placement_source: ["direct_signup", "spillover", "admin_placement"],
     },
   },
 } as const
