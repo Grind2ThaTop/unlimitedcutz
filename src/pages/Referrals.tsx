@@ -11,7 +11,8 @@ import {
   Percent,
   Info,
   Grid3X3,
-  BarChart3
+  BarChart3,
+  ChevronDown
 } from "lucide-react";
 import MatrixCommissionTable from "@/components/referrals/MatrixCommissionTable";
 import MatrixCalculator from "@/components/referrals/MatrixCalculator";
@@ -30,10 +31,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 const Referrals = () => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [openSections, setOpenSections] = useState({
+    compensation: true,
+    matrix: false,
+    referrals: true,
+    history: true,
+  });
   
   const {
     commissions,
@@ -46,6 +59,10 @@ const Referrals = () => {
     referralCode,
     isLoading,
   } = useReferrals();
+
+  const toggleSection = (section: keyof typeof openSections) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -225,162 +242,195 @@ const Referrals = () => {
           </div>
         </div>
 
-        {/* Compensation Visualizations */}
-        <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="font-display text-xl">Compensation Overview</h2>
-              <p className="text-sm text-muted-foreground">Visual breakdown of all earning opportunities</p>
-            </div>
-          </div>
-          
-          {/* Charts Grid */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-6">
-            <FastStartChart />
-            <MatchingBonusChart />
-          </div>
-          
-          {/* Matrix Tree */}
-          <MatrixTreeVisualization />
-        </div>
-
-        {/* Matrix Commission Table & Calculator */}
-        <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Grid3X3 className="w-5 h-5 text-blue-500" />
-            </div>
-            <div>
-              <h2 className="font-display text-xl">Matrix Commissions</h2>
-              <p className="text-sm text-muted-foreground">2×15 forced matrix with rank-based eligibility</p>
-            </div>
-          </div>
-          
-          <MatrixCommissionTable />
-          
-          <div className="mt-8">
-            <MatrixCalculator />
-          </div>
-        </div>
-
-        {/* Direct Referrals List */}
-        {directReferrals.length > 0 && (
-          <div className="bg-card border border-border/50 rounded-xl p-6 mb-8">
-            <h2 className="font-display text-xl mb-6 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Your Direct Referrals
-            </h2>
-
-            <div className="space-y-3">
-              {directReferrals.map((referral) => (
-                <div 
-                  key={referral.id}
-                  className="flex items-center gap-4 bg-muted/30 rounded-lg p-4"
-                >
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="font-display text-primary text-sm">
-                      {referral.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{referral.full_name || 'Unknown'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Joined {format(new Date(referral.created_at), 'MMM d, yyyy')}
-                    </p>
-                  </div>
+        {/* Compensation Visualizations - Collapsible */}
+        <Collapsible open={openSections.compensation} onOpenChange={() => toggleSection('compensation')} className="mb-8">
+          <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
+            <CollapsibleTrigger className="w-full p-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-primary" />
                 </div>
-              ))}
-            </div>
+                <div className="text-left">
+                  <h2 className="font-display text-xl">Compensation Overview</h2>
+                  <p className="text-sm text-muted-foreground">Visual breakdown of all earning opportunities</p>
+                </div>
+              </div>
+              <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", openSections.compensation && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-6 pb-6">
+                {/* Charts Grid */}
+                <div className="grid lg:grid-cols-2 gap-6 mb-6">
+                  <FastStartChart />
+                  <MatchingBonusChart />
+                </div>
+                
+                {/* Matrix Tree */}
+                <MatrixTreeVisualization />
+              </div>
+            </CollapsibleContent>
           </div>
+        </Collapsible>
+
+        {/* Matrix Commission Table & Calculator - Collapsible */}
+        <Collapsible open={openSections.matrix} onOpenChange={() => toggleSection('matrix')} className="mb-8">
+          <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
+            <CollapsibleTrigger className="w-full p-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Grid3X3 className="w-5 h-5 text-blue-500" />
+                </div>
+                <div className="text-left">
+                  <h2 className="font-display text-xl">Matrix Commissions</h2>
+                  <p className="text-sm text-muted-foreground">2×15 forced matrix with rank-based eligibility</p>
+                </div>
+              </div>
+              <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", openSections.matrix && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-6 pb-6">
+                <MatrixCommissionTable />
+                <div className="mt-8">
+                  <MatrixCalculator />
+                </div>
+              </div>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+
+        {/* Direct Referrals List - Collapsible */}
+        {directReferrals.length > 0 && (
+          <Collapsible open={openSections.referrals} onOpenChange={() => toggleSection('referrals')} className="mb-8">
+            <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
+              <CollapsibleTrigger className="w-full p-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                <h2 className="font-display text-xl flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Your Direct Referrals
+                  <span className="text-sm font-normal text-muted-foreground">({directReferrals.length})</span>
+                </h2>
+                <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", openSections.referrals && "rotate-180")} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="px-6 pb-6 space-y-3">
+                  {directReferrals.map((referral) => (
+                    <div 
+                      key={referral.id}
+                      className="flex items-center gap-4 bg-muted/30 rounded-lg p-4"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="font-display text-primary text-sm">
+                          {referral.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">{referral.full_name || 'Unknown'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Joined {format(new Date(referral.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
         )}
 
-        {/* Commission History Tabs */}
-        <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
-          <Tabs defaultValue="faststart" className="w-full">
-            <div className="border-b border-border/50 px-6 pt-4">
-              <TabsList className="bg-muted/50">
-                <TabsTrigger value="faststart">Fast Start</TabsTrigger>
-                <TabsTrigger value="matrix">Matrix</TabsTrigger>
-                <TabsTrigger value="matching">Matching</TabsTrigger>
-              </TabsList>
-            </div>
+        {/* Commission History Tabs - Collapsible */}
+        <Collapsible open={openSections.history} onOpenChange={() => toggleSection('history')}>
+          <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
+            <CollapsibleTrigger className="w-full p-6 flex items-center justify-between hover:bg-muted/30 transition-colors">
+              <h2 className="font-display text-xl flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-primary" />
+                Commission History
+              </h2>
+              <ChevronDown className={cn("w-5 h-5 text-muted-foreground transition-transform", openSections.history && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <Tabs defaultValue="faststart" className="w-full">
+                <div className="border-t border-border/50 px-6 pt-4">
+                  <TabsList className="bg-muted/50">
+                    <TabsTrigger value="faststart">Fast Start</TabsTrigger>
+                    <TabsTrigger value="matrix">Matrix</TabsTrigger>
+                    <TabsTrigger value="matching">Matching</TabsTrigger>
+                  </TabsList>
+                </div>
 
-            <TabsContent value="faststart" className="p-6">
-              {fastStartCommissions.length > 0 ? (
-                <div className="space-y-4">
-                  {fastStartCommissions.map((commission) => (
-                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                      <div>
-                        <p className="font-medium">{commission.description || 'Fast Start Bonus'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <span className="font-display text-lg text-green-500">+${Number(commission.amount).toFixed(0)}</span>
+                <TabsContent value="faststart" className="p-6">
+                  {fastStartCommissions.length > 0 ? (
+                    <div className="space-y-4">
+                      {fastStartCommissions.map((commission) => (
+                        <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                          <div>
+                            <p className="font-medium">{commission.description || 'Fast Start Bonus'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                          <span className="font-display text-lg text-green-500">+${Number(commission.amount).toFixed(0)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No fast start bonuses yet</p>
-                  <p className="text-sm mt-1">Refer someone to earn up to $40!</p>
-                </div>
-              )}
-            </TabsContent>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No fast start bonuses yet</p>
+                      <p className="text-sm mt-1">Refer someone to earn up to $40!</p>
+                    </div>
+                  )}
+                </TabsContent>
 
-            <TabsContent value="matrix" className="p-6">
-              {matrixCommissions.length > 0 ? (
-                <div className="space-y-4">
-                  {matrixCommissions.map((commission) => (
-                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                      <div>
-                        <p className="font-medium">{commission.description || 'Matrix Income'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <span className="font-display text-lg text-blue-500">+${Number(commission.amount).toFixed(0)}</span>
+                <TabsContent value="matrix" className="p-6">
+                  {matrixCommissions.length > 0 ? (
+                    <div className="space-y-4">
+                      {matrixCommissions.map((commission) => (
+                        <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                          <div>
+                            <p className="font-medium">{commission.description || 'Matrix Income'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                          <span className="font-display text-lg text-blue-500">+${Number(commission.amount).toFixed(0)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <GitBranch className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No matrix income yet</p>
-                  <p className="text-sm mt-1">Earn as positions fill below you in the matrix</p>
-                </div>
-              )}
-            </TabsContent>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <GitBranch className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No matrix income yet</p>
+                      <p className="text-sm mt-1">Earn as positions fill below you in the matrix</p>
+                    </div>
+                  )}
+                </TabsContent>
 
-            <TabsContent value="matching" className="p-6">
-              {matchingCommissions.length > 0 ? (
-                <div className="space-y-4">
-                  {matchingCommissions.map((commission) => (
-                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                      <div>
-                        <p className="font-medium">{commission.description || 'Matching Bonus'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <span className="font-display text-lg text-purple-500">+${Number(commission.amount).toFixed(0)}</span>
+                <TabsContent value="matching" className="p-6">
+                  {matchingCommissions.length > 0 ? (
+                    <div className="space-y-4">
+                      {matchingCommissions.map((commission) => (
+                        <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                          <div>
+                            <p className="font-medium">{commission.description || 'Matching Bonus'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                          <span className="font-display text-lg text-purple-500">+${Number(commission.amount).toFixed(0)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Percent className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No matching bonuses yet</p>
-                  <p className="text-sm mt-1">Earn 10% on L1 and 5% on L2 of your team's earnings</p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Percent className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No matching bonuses yet</p>
+                      <p className="text-sm mt-1">Earn 10% on L1 and 5% on L2 of your team's earnings</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
       </div>
     </PortalLayout>
   );
