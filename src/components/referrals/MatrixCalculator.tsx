@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Calculator, Info } from "lucide-react";
+import { useState, useMemo, forwardRef } from "react";
+import { Calculator, Info, LucideProps } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,6 +15,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+// Wrap Info icon to forward refs properly for Tooltip
+const InfoIcon = forwardRef<SVGSVGElement, LucideProps>((props, ref) => (
+  <Info ref={ref} {...props} />
+));
 
 // Rank configuration with max positions
 const RANKS = [
@@ -77,8 +82,10 @@ const MatrixCalculator = () => {
             <Label htmlFor="rank">Your Rank</Label>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
-                  <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">
+                    <InfoIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p>Your rank determines how many levels you can earn from. Higher ranks unlock more levels.</p>
@@ -109,8 +116,10 @@ const MatrixCalculator = () => {
             <Label htmlFor="base-members">Base Members</Label>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
-                  <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">
+                    <InfoIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p>Number of paying $50/month base members in your eligible matrix levels.</p>
@@ -138,8 +147,10 @@ const MatrixCalculator = () => {
             <Label htmlFor="addon-connections">Add-on Connections</Label>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
-                  <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">
+                    <InfoIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p>Number of paying $25/month add-on connections in your eligible matrix levels.</p>
