@@ -5,7 +5,11 @@ import {
   Users, 
   DollarSign, 
   TrendingUp,
-  Check
+  Check,
+  Zap,
+  GitBranch,
+  Percent,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -13,6 +17,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useReferrals } from "@/hooks/useReferrals";
 import { format } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Referrals = () => {
   const { toast } = useToast();
@@ -20,6 +30,7 @@ const Referrals = () => {
   
   const {
     commissions,
+    matrixNode,
     directReferrals,
     earningsSummary,
     totalEarnings,
@@ -38,9 +49,8 @@ const Referrals = () => {
 
   // Group commissions by type
   const fastStartCommissions = commissions.filter(c => c.commission_type === 'fast_start');
-  const levelBonusCommissions = commissions.filter(c => c.commission_type === 'level_bonus');
+  const matchingCommissions = commissions.filter(c => c.commission_type === 'matching_bonus');
   const matrixCommissions = commissions.filter(c => c.commission_type === 'matrix_membership');
-  const productCommissions = commissions.filter(c => c.commission_type === 'product_commission');
 
   if (isLoading) {
     return (
@@ -59,8 +69,95 @@ const Referrals = () => {
         <div className="mb-8">
           <h1 className="font-display text-3xl lg:text-4xl mb-2">Referral Center</h1>
           <p className="text-muted-foreground">
-            Share Magnetic Barbering and earn commissions on 5 levels
+            Earn commissions through Fast Start, Matrix, and Matching Bonuses
           </p>
+        </div>
+
+        {/* Compensation Explainer Cards */}
+        <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-green-500" />
+              </div>
+              <h3 className="font-display text-lg">Fast Start</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Earn when people you personally refer become active members.
+            </p>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Level 1 (direct):</span>
+                <span className="font-medium text-green-500">$25</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Level 2:</span>
+                <span className="font-medium text-green-500">$10</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Level 3:</span>
+                <span className="font-medium text-green-500">$5</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <GitBranch className="w-5 h-5 text-blue-500" />
+              </div>
+              <h3 className="font-display text-lg">Matrix Income</h3>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Everyone joins the same 3×7 forced matrix. When positions under you fill, you get paid automatically through spillover.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Earn as the matrix fills — no personal recruiting required.
+            </p>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Matrix type:</span>
+                <span className="font-medium">3×7 Forced</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Per placement:</span>
+                <span className="font-medium text-blue-500">$5</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Max depth:</span>
+                <span className="font-medium">7 levels</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <Percent className="w-5 h-5 text-purple-500" />
+              </div>
+              <h3 className="font-display text-lg">Matching Bonus</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Earn a percentage of what your organization earns.
+            </p>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Level 1 match:</span>
+                <span className="font-medium text-purple-500">10%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Level 2 match:</span>
+                <span className="font-medium text-purple-500">5%</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Referral Link Card */}
@@ -115,11 +212,18 @@ const Referrals = () => {
           <div className="bg-card border border-border/50 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <Check className="w-5 h-5 text-green-500" />
+                <GitBranch className="w-5 h-5 text-green-500" />
               </div>
-              <span className="text-muted-foreground text-sm">Active Network</span>
+              <span className="text-muted-foreground text-sm">Matrix Position</span>
             </div>
-            <p className="font-display text-3xl">{directReferrals.length}</p>
+            <p className="font-display text-3xl">
+              {matrixNode ? `L${matrixNode.level}` : '—'}
+            </p>
+            {matrixNode && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Position {matrixNode.position || 'Root'}
+              </p>
+            )}
           </div>
 
           <div className="bg-card border border-border/50 rounded-xl p-6">
@@ -140,6 +244,31 @@ const Referrals = () => {
               <span className="text-muted-foreground text-sm">All Time</span>
             </div>
             <p className="font-display text-3xl">${totalEarnings.toFixed(0)}</p>
+          </div>
+        </div>
+
+        {/* Earnings Breakdown Mini Cards */}
+        <div className="grid sm:grid-cols-3 gap-4 mb-8">
+          <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Zap className="w-5 h-5 text-green-500" />
+              <span className="text-sm">Fast Start</span>
+            </div>
+            <span className="font-display text-lg">${earningsSummary.fastStart.toFixed(0)}</span>
+          </div>
+          <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <GitBranch className="w-5 h-5 text-blue-500" />
+              <span className="text-sm">Matrix</span>
+            </div>
+            <span className="font-display text-lg">${earningsSummary.matrixMembership.toFixed(0)}</span>
+          </div>
+          <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Percent className="w-5 h-5 text-purple-500" />
+              <span className="text-sm">Matching</span>
+            </div>
+            <span className="font-display text-lg">${earningsSummary.levelBonus.toFixed(0)}</span>
           </div>
         </div>
 
@@ -174,15 +303,14 @@ const Referrals = () => {
           </div>
         )}
 
-        {/* Earnings Breakdown */}
+        {/* Commission History Tabs */}
         <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
           <Tabs defaultValue="faststart" className="w-full">
             <div className="border-b border-border/50 px-6 pt-4">
               <TabsList className="bg-muted/50">
                 <TabsTrigger value="faststart">Fast Start</TabsTrigger>
-                <TabsTrigger value="level">Level Bonuses</TabsTrigger>
                 <TabsTrigger value="matrix">Matrix</TabsTrigger>
-                <TabsTrigger value="products">Products</TabsTrigger>
+                <TabsTrigger value="matching">Matching</TabsTrigger>
               </TabsList>
             </div>
 
@@ -197,35 +325,15 @@ const Referrals = () => {
                           Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
                         </p>
                       </div>
-                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
+                      <span className="font-display text-lg text-green-500">+${Number(commission.amount).toFixed(0)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No fast start bonuses yet. Refer someone to earn!
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="level" className="p-6">
-              {levelBonusCommissions.length > 0 ? (
-                <div className="space-y-4">
-                  {levelBonusCommissions.map((commission) => (
-                    <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-                      <div>
-                        <p className="font-medium">{commission.description || 'Level Bonus'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(commission.created_at), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Monthly level bonuses will appear here after the billing cycle.
+                  <Zap className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No fast start bonuses yet</p>
+                  <p className="text-sm mt-1">Refer someone to earn up to $40!</p>
                 </div>
               )}
             </TabsContent>
@@ -236,40 +344,44 @@ const Referrals = () => {
                   {matrixCommissions.map((commission) => (
                     <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
                       <div>
-                        <p className="font-medium">{commission.description || 'Matrix Commission'}</p>
+                        <p className="font-medium">{commission.description || 'Matrix Income'}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                          Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
                         </p>
                       </div>
-                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
+                      <span className="font-display text-lg text-blue-500">+${Number(commission.amount).toFixed(0)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  Matrix commission details for the current period.
+                  <GitBranch className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No matrix income yet</p>
+                  <p className="text-sm mt-1">Earn as positions fill below you in the matrix</p>
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="products" className="p-6">
-              {productCommissions.length > 0 ? (
+            <TabsContent value="matching" className="p-6">
+              {matchingCommissions.length > 0 ? (
                 <div className="space-y-4">
-                  {productCommissions.map((commission) => (
+                  {matchingCommissions.map((commission) => (
                     <div key={commission.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
                       <div>
-                        <p className="font-medium">{commission.description || 'Product Commission'}</p>
+                        <p className="font-medium">{commission.description || 'Matching Bonus'}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(commission.created_at), 'MMM d, yyyy')}
+                          Level {commission.level} • {format(new Date(commission.created_at), 'MMM d, yyyy')}
                         </p>
                       </div>
-                      <span className="font-display text-lg text-primary">+${Number(commission.amount).toFixed(0)}</span>
+                      <span className="font-display text-lg text-purple-500">+${Number(commission.amount).toFixed(0)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  Product commission history will appear here.
+                  <Percent className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No matching bonuses yet</p>
+                  <p className="text-sm mt-1">Earn 10% on L1 and 5% on L2 of your team's earnings</p>
                 </div>
               )}
             </TabsContent>
