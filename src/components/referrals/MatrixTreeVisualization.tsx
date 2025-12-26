@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GitBranch, User, UserCheck, UserX, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -19,6 +19,10 @@ interface MatrixNodeData {
   right_child: string | null;
   level: number;
   position: number | null;
+  profiles: {
+    full_name: string | null;
+    email: string;
+  } | null;
 }
 
 interface DisplayNode {
@@ -106,6 +110,17 @@ const TreeNode = ({ node }: { node: DisplayNode }) => {
   );
 };
 
+// Get display name from profile
+const getDisplayName = (node: MatrixNodeData): string => {
+  if (node.profiles?.full_name) {
+    return node.profiles.full_name;
+  }
+  if (node.profiles?.email) {
+    return node.profiles.email.split('@')[0];
+  }
+  return `Member ${node.id.slice(0, 4)}`;
+};
+
 // Build tree structure from flat node array
 const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[][] => {
   if (nodes.length === 0) {
@@ -149,7 +164,7 @@ const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[]
             level: levelNum,
             position: position++,
             status: 'filled',
-            name: `Member ${child.id.slice(0, 4)}`,
+            name: getDisplayName(child),
             earnings: 1.25,
           });
         }
@@ -171,7 +186,7 @@ const buildTreeLevels = (nodes: MatrixNodeData[], userId: string): DisplayNode[]
             level: levelNum,
             position: position++,
             status: 'filled',
-            name: `Member ${child.id.slice(0, 4)}`,
+            name: getDisplayName(child),
             earnings: 1.25,
           });
         }
@@ -234,23 +249,70 @@ const generateEmptyTree = (): DisplayNode[][] => {
 const MatrixTreeVisualization = () => {
   const [expanded, setExpanded] = useState(true);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  // Fetch matrix nodes the user can see (their own + downline)
+  // Fetch matrix nodes with profile names
   const { data: matrixNodes, isLoading } = useQuery({
     queryKey: ['matrixTree', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      // First get matrix nodes
+      const { data: nodes, error: nodesError } = await supabase
         .from('matrix_nodes')
         .select('id, user_id, parent_id, left_child, right_child, level, position')
         .order('level', { ascending: true });
       
-      if (error) throw error;
-      return data || [];
+      if (nodesError) throw nodesError;
+      if (!nodes || nodes.length === 0) return [];
+
+      // Get unique user IDs to fetch profiles
+      const userIds = [...new Set(nodes.map(n => n.user_id))];
+      
+      // Fetch profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to profile
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      // Merge profiles into nodes
+      return nodes.map(node => ({
+        ...node,
+        profiles: profileMap.get(node.user_id) || null,
+      })) as MatrixNodeData[];
     },
     enabled: !!user?.id,
   });
+
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('matrix-tree-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'matrix_nodes',
+        },
+        () => {
+          // Refetch the matrix tree when changes occur
+          queryClient.invalidateQueries({ queryKey: ['matrixTree', user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   const treeData = matrixNodes && user?.id 
     ? buildTreeLevels(matrixNodes, user.id) 
