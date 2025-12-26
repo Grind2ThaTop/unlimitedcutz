@@ -2,12 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Tables } from '@/integrations/supabase/types';
+import { toast } from 'sonner';
 
 type Membership = Tables<'memberships'>;
 type HouseholdMember = Tables<'household_members'>;
 
 export const useMembership = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const queryClient = useQueryClient();
 
   const membershipQuery = useQuery({
@@ -46,26 +47,88 @@ export const useMembership = () => {
     enabled: !!membershipQuery.data?.id,
   });
 
+  // Check subscription status with Stripe
+  const checkSubscription = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['membership'] });
+    },
+  });
+
+  // Create checkout session
+  const createCheckout = useMutation({
+    mutationFn: async (additionalMembers: number = 0) => {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { additionalMembers },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (error) => {
+      toast.error('Failed to start checkout: ' + error.message);
+    },
+  });
+
+  // Open customer portal
+  const openCustomerPortal = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (error) => {
+      toast.error('Failed to open billing portal: ' + error.message);
+    },
+  });
+
+  // Add household member with Stripe
   const addHouseholdMember = useMutation({
     mutationFn: async ({ name, email }: { name: string; email?: string }) => {
-      if (!membershipQuery.data?.id) throw new Error('No membership found');
-      
-      const { data, error } = await supabase
-        .from('household_members')
-        .insert({
-          membership_id: membershipQuery.data.id,
-          name,
-          email: email || null,
-          is_primary: false,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('add-household-member', {
+        body: { name, email },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
       
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['household'] });
+      queryClient.invalidateQueries({ queryKey: ['membership'] });
+      toast.success('Household member added! Your subscription has been updated.');
+    },
+    onError: (error) => {
+      toast.error('Failed to add member: ' + error.message);
     },
   });
 
@@ -86,6 +149,7 @@ export const useMembership = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['household'] });
+      toast.success('Household member removed.');
     },
   });
 
@@ -109,5 +173,8 @@ export const useMembership = () => {
     addHouseholdMember,
     removeHouseholdMember,
     isEligibleForVisit,
+    checkSubscription,
+    createCheckout,
+    openCustomerPortal,
   };
 };
