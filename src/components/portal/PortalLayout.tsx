@@ -14,9 +14,11 @@ import {
   X,
   ChevronRight,
   User,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -33,10 +35,15 @@ const navItems = [
   { icon: Settings, label: "Settings", href: "/portal/settings" },
 ];
 
+const adminNavItems = [
+  { icon: Shield, label: "Rank Management", href: "/portal/admin/ranks" },
+];
+
 const PortalLayout = ({ children }: PortalLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { profile, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
 
   const initials = profile?.full_name
     ?.split(' ')
@@ -94,7 +101,7 @@ const PortalLayout = ({ children }: PortalLayoutProps) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-1">
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -114,6 +121,36 @@ const PortalLayout = ({ children }: PortalLayoutProps) => {
                 </Link>
               );
             })}
+
+            {/* Admin Navigation */}
+            {isAdmin && (
+              <>
+                <div className="pt-4 pb-2 px-4">
+                  <span className="text-xs font-semibold text-secondary-foreground/40 uppercase tracking-wider">
+                    Admin
+                  </span>
+                </div>
+                {adminNavItems.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-secondary-foreground/60 hover:bg-card/10 hover:text-secondary-foreground"
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.label}</span>
+                      {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                    </Link>
+                  );
+                })}
+              </>
+            )}
           </nav>
 
           {/* User Section */}
