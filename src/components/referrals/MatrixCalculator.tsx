@@ -15,39 +15,41 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { RANKS, RANK_ORDER, type RankId } from "@/lib/rankConfig";
 
 // Wrap Info icon to forward refs properly for Tooltip
 const InfoIcon = forwardRef<SVGSVGElement, LucideProps>((props, ref) => (
   <Info ref={ref} {...props} />
 ));
 
-// Rank configuration with max positions
-const RANKS = [
-  { name: 'Unranked', paidLevels: 12, maxPositions: 8190 },
-  { name: 'Bronze', paidLevels: 13, maxPositions: 16382 },
-  { name: 'Silver', paidLevels: 13, maxPositions: 16382 },
-  { name: 'Gold', paidLevels: 14, maxPositions: 32766 },
-  { name: 'Platinum', paidLevels: 14, maxPositions: 32766 },
-  { name: 'Diamond', paidLevels: 15, maxPositions: 65534 },
-];
+// Pre-calculated max positions for 3×8 matrix by rank
+// L1=3, L2=9, L3=27, L4=81, L5=243, L6=729, L7=2187, L8=6561
+const RANK_MAX_POSITIONS: Record<RankId, { levels: number; maxPositions: number }> = {
+  rookie: { levels: 3, maxPositions: 39 },       // 3+9+27
+  hustla: { levels: 4, maxPositions: 120 },      // 3+9+27+81
+  grinder: { levels: 5, maxPositions: 363 },     // +243
+  influencer: { levels: 6, maxPositions: 1092 }, // +729
+  executive: { levels: 7, maxPositions: 3279 },  // +2187
+  partner: { levels: 8, maxPositions: 9840 },    // +6561
+};
 
 const BASE_COMMISSION = 1.25; // 2.5% of $50
 const ADDON_COMMISSION = 0.625; // 2.5% of $25
 
 const MatrixCalculator = () => {
-  const [selectedRank, setSelectedRank] = useState('Unranked');
+  const [selectedRank, setSelectedRank] = useState<RankId>('rookie');
   const [baseMembers, setBaseMembers] = useState<string>('');
   const [addonConnections, setAddonConnections] = useState<string>('');
 
-  const currentRank = RANKS.find(r => r.name === selectedRank) || RANKS[0];
+  const currentRankConfig = RANK_MAX_POSITIONS[selectedRank];
 
   const calculation = useMemo(() => {
     const base = parseInt(baseMembers) || 0;
     const addon = parseInt(addonConnections) || 0;
     
     // Cap at max positions for rank
-    const cappedBase = Math.min(base, currentRank.maxPositions);
-    const cappedAddon = Math.min(addon, currentRank.maxPositions);
+    const cappedBase = Math.min(base, currentRankConfig.maxPositions);
+    const cappedAddon = Math.min(addon, currentRankConfig.maxPositions);
     
     const baseEarnings = cappedBase * BASE_COMMISSION;
     const addonEarnings = cappedAddon * ADDON_COMMISSION;
@@ -59,9 +61,9 @@ const MatrixCalculator = () => {
       total,
       cappedBase,
       cappedAddon,
-      wasCapped: base > currentRank.maxPositions || addon > currentRank.maxPositions,
+      wasCapped: base > currentRankConfig.maxPositions || addon > currentRankConfig.maxPositions,
     };
-  }, [baseMembers, addonConnections, currentRank]);
+  }, [baseMembers, addonConnections, currentRankConfig]);
 
   return (
     <div className="bg-card border border-border/50 rounded-xl p-6">
@@ -71,7 +73,7 @@ const MatrixCalculator = () => {
         </div>
         <div>
           <h3 className="font-display text-xl">Matrix Income Calculator</h3>
-          <p className="text-sm text-muted-foreground">Estimate your monthly matrix commissions</p>
+          <p className="text-sm text-muted-foreground">Estimate your monthly 3×8 matrix commissions</p>
         </div>
       </div>
 
@@ -93,20 +95,24 @@ const MatrixCalculator = () => {
               </Tooltip>
             </TooltipProvider>
           </div>
-          <Select value={selectedRank} onValueChange={setSelectedRank}>
+          <Select value={selectedRank} onValueChange={(val) => setSelectedRank(val as RankId)}>
             <SelectTrigger id="rank">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {RANKS.map((rank) => (
-                <SelectItem key={rank.name} value={rank.name}>
-                  {rank.name} (L1-{rank.paidLevels})
-                </SelectItem>
-              ))}
+              {RANK_ORDER.map((rankId) => {
+                const rank = RANKS[rankId];
+                const config = RANK_MAX_POSITIONS[rankId];
+                return (
+                  <SelectItem key={rankId} value={rankId}>
+                    {rank.emoji} {rank.name} (L1-{config.levels})
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Max positions: {currentRank.maxPositions.toLocaleString()}
+            Max positions: {currentRankConfig.maxPositions.toLocaleString()}
           </p>
         </div>
 
@@ -131,7 +137,7 @@ const MatrixCalculator = () => {
             id="base-members"
             type="number"
             min="0"
-            max={currentRank.maxPositions}
+            max={currentRankConfig.maxPositions}
             placeholder="0"
             value={baseMembers}
             onChange={(e) => setBaseMembers(e.target.value)}
@@ -162,7 +168,7 @@ const MatrixCalculator = () => {
             id="addon-connections"
             type="number"
             min="0"
-            max={currentRank.maxPositions}
+            max={currentRankConfig.maxPositions}
             placeholder="0"
             value={addonConnections}
             onChange={(e) => setAddonConnections(e.target.value)}
@@ -198,7 +204,7 @@ const MatrixCalculator = () => {
 
         {calculation.wasCapped && (
           <p className="text-xs text-amber-500 text-center mb-3">
-            * Values capped at max positions for {selectedRank} rank
+            * Values capped at max positions for {RANKS[selectedRank].name} rank
           </p>
         )}
 
