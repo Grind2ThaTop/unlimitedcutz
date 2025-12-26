@@ -80,89 +80,35 @@ const Referrals = () => {
           </p>
         </div>
 
-        {/* Compensation Explainer Cards */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-green-500" />
-              </div>
-              <h3 className="font-display text-lg">Fast Start</h3>
+        {/* Compensation Explainer Cards - Collapsed */}
+        <div className="grid md:grid-cols-3 gap-3 mb-6">
+          <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-lg p-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-green-500/20 flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4 text-green-500" />
             </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Earn when people you personally refer become active members.
-            </p>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Level 1 (direct):</span>
-                <span className="font-medium text-green-500">$25</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Level 2:</span>
-                <span className="font-medium text-green-500">$10</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Level 3:</span>
-                <span className="font-medium text-green-500">$5</span>
-              </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-sm">Fast Start</h3>
+              <p className="text-xs text-muted-foreground truncate">$25 / $10 / $5 per level</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <Grid3X3 className="w-5 h-5 text-blue-500" />
-              </div>
-              <h3 className="font-display text-lg">Matrix Income</h3>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="w-4 h-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Everyone joins the same 2×15 forced matrix. When positions under you fill, you get paid automatically through spillover.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-lg p-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-blue-500/20 flex items-center justify-center shrink-0">
+              <Grid3X3 className="w-4 h-4 text-blue-500" />
             </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Earn as the matrix fills — no personal recruiting required.
-            </p>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Matrix type:</span>
-                <span className="font-medium">2×15 Forced</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Commission rate:</span>
-                <span className="font-medium text-blue-500">2.5%/level</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Max depth:</span>
-                <span className="font-medium">15 levels</span>
-              </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-sm">Matrix Income</h3>
+              <p className="text-xs text-muted-foreground truncate">2×15 forced • 2.5%/level</p>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <Percent className="w-5 h-5 text-purple-500" />
-              </div>
-              <h3 className="font-display text-lg">Matching Bonus</h3>
+          <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-lg p-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-purple-500/20 flex items-center justify-center shrink-0">
+              <Percent className="w-4 h-4 text-purple-500" />
             </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Earn a percentage of what your organization earns.
-            </p>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Level 1 match:</span>
-                <span className="font-medium text-purple-500">10%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Level 2 match:</span>
-                <span className="font-medium text-purple-500">5%</span>
-              </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-sm">Matching Bonus</h3>
+              <p className="text-xs text-muted-foreground truncate">10% L1 • 5% L2</p>
             </div>
           </div>
         </div>
