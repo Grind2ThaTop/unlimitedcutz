@@ -279,6 +279,48 @@ export type Database = {
           },
         ]
       }
+      payout_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: string
+          method_details: string | null
+          notes: string | null
+          processed_at: string | null
+          processed_by: string | null
+          requested_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          method: string
+          method_details?: string | null
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: string
+          method_details?: string | null
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          requested_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_orders: {
         Row: {
           created_at: string
@@ -349,12 +391,14 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          cashapp_username: string | null
           created_at: string
           email: string
           facebook_url: string | null
           full_name: string | null
           id: string
           instagram_url: string | null
+          paypal_email: string | null
           referral_code: string | null
           referred_by: string | null
           tiktok_url: string | null
@@ -364,12 +408,14 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          cashapp_username?: string | null
           created_at?: string
           email: string
           facebook_url?: string | null
           full_name?: string | null
           id: string
           instagram_url?: string | null
+          paypal_email?: string | null
           referral_code?: string | null
           referred_by?: string | null
           tiktok_url?: string | null
@@ -379,12 +425,14 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          cashapp_username?: string | null
           created_at?: string
           email?: string
           facebook_url?: string | null
           full_name?: string | null
           id?: string
           instagram_url?: string | null
+          paypal_email?: string | null
           referral_code?: string | null
           referred_by?: string | null
           tiktok_url?: string | null
@@ -466,6 +514,7 @@ export type Database = {
         | "level_bonus"
         | "matrix_membership"
         | "product_commission"
+        | "matching_bonus"
       membership_status: "active" | "past_due" | "canceled" | "pending"
       payout_status: "pending" | "paid" | "canceled"
     }
@@ -601,6 +650,7 @@ export const Constants = {
         "level_bonus",
         "matrix_membership",
         "product_commission",
+        "matching_bonus",
       ],
       membership_status: ["active", "past_due", "canceled", "pending"],
       payout_status: ["pending", "paid", "canceled"],

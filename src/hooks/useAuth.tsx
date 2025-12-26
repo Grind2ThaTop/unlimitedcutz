@@ -9,6 +9,12 @@ interface Profile {
   full_name: string | null;
   referral_code: string | null;
   referred_by: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  instagram_url: string | null;
+  tiktok_url: string | null;
+  facebook_url: string | null;
+  x_url: string | null;
 }
 
 interface AuthContextType {
