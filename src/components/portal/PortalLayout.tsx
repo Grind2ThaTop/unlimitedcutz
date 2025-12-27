@@ -8,7 +8,6 @@ import {
   CreditCard,
   Share2,
   ShoppingBag,
-  Settings,
   LogOut,
   Menu,
   X,
@@ -16,25 +15,16 @@ import {
   User,
   Shield,
   Activity,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAccountRole } from "@/hooks/useAccountRole";
 
 interface PortalLayoutProps {
   children: React.ReactNode;
 }
-
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/portal" },
-  { icon: User, label: "Profile", href: "/portal/profile" },
-  { icon: Users, label: "Connections", href: "/portal/connections" },
-  { icon: Calendar, label: "Book Appointment", href: "/portal/booking" },
-  { icon: CreditCard, label: "Billing", href: "/portal/billing" },
-  { icon: Share2, label: "Referral Center", href: "/portal/referrals" },
-  { icon: ShoppingBag, label: "Product Store", href: "/portal/store" },
-  { icon: Settings, label: "Settings", href: "/portal/settings" },
-];
 
 const adminNavItems = [
   { icon: Shield, label: "Rank Management", href: "/portal/admin/ranks" },
@@ -46,6 +36,7 @@ const PortalLayout = ({ children }: PortalLayoutProps) => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
   const { isAdmin } = useAdmin();
+  const { isBarber } = useAccountRole();
 
   const initials = profile?.full_name
     ?.split(' ')
@@ -53,6 +44,18 @@ const PortalLayout = ({ children }: PortalLayoutProps) => {
     .join('')
     .slice(0, 2)
     .toUpperCase() || 'U';
+
+  // Build nav items based on account type
+  const navItems = [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/portal" },
+    { icon: User, label: "Profile", href: "/portal/profile" },
+    // Connections only for clients (not barbers)
+    ...(!isBarber ? [{ icon: Users, label: "Connections", href: "/portal/connections" }] : []),
+    { icon: Calendar, label: isBarber ? "Book a Client" : "Book Appointment", href: "/portal/booking" },
+    { icon: Wallet, label: "Payouts", href: "/portal/payouts" },
+    { icon: Share2, label: "Referral Center", href: "/portal/referrals" },
+    { icon: ShoppingBag, label: "Product Store", href: "/portal/store" },
+  ];
 
   return (
     <div className="min-h-screen bg-muted/30">
