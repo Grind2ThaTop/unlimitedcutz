@@ -17,12 +17,11 @@ import { cn } from "@/lib/utils";
 // Level positions: L1=3, L2=9, L3=27, L4=81, L5=243, L6=729, L7=2187, L8=6561
 // Cumulative: L1-3=39, L1-4=120, L1-5=363, L1-6=1092, L1-7=3279, L1-8=9840
 const RANK_POSITIONS: Record<RankId, number> = {
-  rookie: 39,       // L1-3
-  hustla: 120,      // L1-4
-  grinder: 363,     // L1-5
-  influencer: 1092, // L1-6
-  executive: 3279,  // L1-7
-  partner: 9840,    // L1-8
+  bronze: 39,       // L1-3
+  silver: 120,      // L1-4
+  gold: 363,        // L1-5
+  platinum: 1092,   // L1-6
+  diamond: 9840,    // L1-8 (Full matrix)
 };
 
 // Calculate totals based on rate

@@ -20,7 +20,7 @@ const RankBenefitsTable = () => {
       <div className="p-6 border-b border-border/50">
         <h3 className="font-display text-xl">Rank Benefits Overview</h3>
         <p className="text-sm text-muted-foreground">
-          Your rank controls how deep you get paid. Stay active. Build consistently. Move up.
+          Your rank controls how deep you get paid. Build your downline to unlock more levels.
         </p>
       </div>
 
@@ -29,9 +29,9 @@ const RankBenefitsTable = () => {
           <thead>
             <tr className="bg-muted/50">
               <th className="py-3 px-4 text-left font-display">Rank</th>
-              <th className="py-3 px-4 text-center font-display">Matrix Levels</th>
-              <th className="py-3 px-4 text-center font-display">Fast Start</th>
-              <th className="py-3 px-4 text-center font-display">Matching</th>
+              <th className="py-3 px-4 text-center font-display">Commission Depth</th>
+              <th className="py-3 px-4 text-center font-display">Qualification</th>
+              <th className="py-3 px-4 text-center font-display">Matching Bonus</th>
               <th className="py-3 px-4 text-center font-display">Pools</th>
             </tr>
           </thead>
@@ -64,18 +64,16 @@ const RankBenefitsTable = () => {
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    <span className="font-mono">1-{rank.matrixLevels}</span>
+                    <span className="font-mono">Levels 1-{rank.matrixLevels}</span>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    {rank.benefits.fastStart ? (
-                      <Check className="w-4 h-4 text-green-500 mx-auto" />
-                    ) : (
-                      <X className="w-4 h-4 text-muted-foreground mx-auto" />
-                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {rank.qualificationText}
+                    </span>
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className={cn(
-                      rank.benefits.matching ? "text-purple-500 font-medium" : "text-muted-foreground"
+                      rank.benefits.matchingDepth > 0 ? "text-purple-500 font-medium" : "text-muted-foreground"
                     )}>
                       {getMatchingBonusDisplay(rank)}
                     </span>
@@ -94,9 +92,12 @@ const RankBenefitsTable = () => {
         </table>
       </div>
 
-      <div className="p-4 bg-muted/30 border-t border-border/50">
+      <div className="p-4 bg-muted/30 border-t border-border/50 space-y-1">
         <p className="text-xs text-muted-foreground text-center">
-          Ranks are earned monthly and must be maintained. Benefits pause when inactive.
+          Ranks are earned by building your downline with active members of specific ranks.
+        </p>
+        <p className="text-xs text-muted-foreground text-center">
+          If qualification drops, deeper commission levels pause until restored. Matrix placement is never removed.
         </p>
       </div>
     </div>

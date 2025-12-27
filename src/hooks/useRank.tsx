@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { RANKS, RANK_ORDER, getNextRank, type RankId, type RankConfig } from '@/lib/rankConfig';
+import { RANKS, RANK_ORDER, getNextRank, RANK_TO_MAX_LEVEL, type RankId, type RankConfig } from '@/lib/rankConfig';
 
 interface MemberRank {
   id: string;
@@ -11,6 +11,10 @@ interface MemberRank {
   last_evaluated_at: string | null;
   is_active: boolean;
   personally_enrolled_count: number;
+  active_bronze_count: number;
+  active_silver_count: number;
+  active_gold_count: number;
+  active_platinum_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -36,24 +40,6 @@ export const useRank = () => {
     enabled: !!user?.id,
   });
 
-  // Get personally enrolled count (active direct referrals)
-  const enrolledCountQuery = useQuery({
-    queryKey: ['personallyEnrolledCount', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return 0;
-      
-      // Count profiles that were referred by this user
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('referred_by', user.id);
-      
-      if (error) throw error;
-      return count || 0;
-    },
-    enabled: !!user?.id,
-  });
-
   // Get rank history
   const historyQuery = useQuery({
     queryKey: ['rankHistory', user?.id],
@@ -74,50 +60,71 @@ export const useRank = () => {
 
   // Determine current rank based on data
   const memberRank = rankQuery.data;
-  const personallyEnrolled = enrolledCountQuery.data || 0;
   
-  // Calculate current rank based on personally enrolled count if no DB record
-  const calculateRankFromEnrollment = (count: number): RankId => {
-    if (count >= 10) return 'influencer'; // Could be executive/partner with additional requirements
-    if (count >= 5) return 'grinder';
-    if (count >= 3) return 'hustla';
-    return 'rookie';
-  };
-
-  const currentRankId: RankId = memberRank?.current_rank || calculateRankFromEnrollment(personallyEnrolled);
+  // Get current rank from DB or default to bronze
+  const currentRankId: RankId = (memberRank?.current_rank as RankId) || 'bronze';
   const currentRank: RankConfig = RANKS[currentRankId];
   const nextRank = getNextRank(currentRankId);
   const isActive = memberRank?.is_active ?? true;
 
-  // Calculate progress to next rank
-  const calculateProgress = (): { current: number; required: number; percentage: number } => {
+  // Get downline counts for qualification progress
+  const activeBronzeCount = memberRank?.active_bronze_count || 0;
+  const activeSilverCount = memberRank?.active_silver_count || 0;
+  const activeGoldCount = memberRank?.active_gold_count || 0;
+  const activePlatinumCount = memberRank?.active_platinum_count || 0;
+
+  // Calculate progress to next rank based on downline requirements
+  const calculateProgress = (): { current: number; required: number; percentage: number; label: string } => {
     if (!nextRank) {
-      return { current: personallyEnrolled, required: personallyEnrolled, percentage: 100 };
+      return { current: 0, required: 0, percentage: 100, label: 'Max rank reached' };
     }
 
-    const required = nextRank.requirements.personallyEnrolled;
-    const current = Math.min(personallyEnrolled, required);
-    const percentage = required > 0 ? Math.round((current / required) * 100) : 100;
+    const reqs = nextRank.requirements;
+    
+    if (reqs.activePlatinum) {
+      const current = Math.min(activePlatinumCount, reqs.activePlatinum);
+      return { 
+        current, 
+        required: reqs.activePlatinum, 
+        percentage: Math.round((current / reqs.activePlatinum) * 100),
+        label: 'Active PLATINUM members'
+      };
+    }
+    if (reqs.activeGold) {
+      const current = Math.min(activeGoldCount, reqs.activeGold);
+      return { 
+        current, 
+        required: reqs.activeGold, 
+        percentage: Math.round((current / reqs.activeGold) * 100),
+        label: 'Active GOLD members'
+      };
+    }
+    if (reqs.activeSilver) {
+      const current = Math.min(activeSilverCount, reqs.activeSilver);
+      return { 
+        current, 
+        required: reqs.activeSilver, 
+        percentage: Math.round((current / reqs.activeSilver) * 100),
+        label: 'Active SILVER members'
+      };
+    }
+    if (reqs.activeBronze) {
+      const current = Math.min(activeBronzeCount, reqs.activeBronze);
+      return { 
+        current, 
+        required: reqs.activeBronze, 
+        percentage: Math.round((current / reqs.activeBronze) * 100),
+        label: 'Active BRONZE members'
+      };
+    }
 
-    return { current, required, percentage };
+    return { current: 0, required: 0, percentage: 100, label: '' };
   };
 
   const progress = calculateProgress();
 
-  // Get additional requirements text for next rank
-  const getAdditionalRequirements = (): string[] => {
-    if (!nextRank) return [];
-    const reqs: string[] = [];
-    
-    if (nextRank.requirements.teamActivity) reqs.push('Team activity (admin-defined)');
-    if (nextRank.requirements.orgVolume) reqs.push('Organization volume (admin-defined)');
-    if (nextRank.requirements.leadershipVolume) reqs.push('Leadership volume thresholds');
-    if (nextRank.requirements.orgStability) reqs.push('Organization stability');
-    if (nextRank.requirements.elitePerformance) reqs.push('Elite performance metrics');
-    if (nextRank.requirements.adminApproval) reqs.push('Admin approval required');
-    
-    return reqs;
-  };
+  // Get max payable matrix level for this rank
+  const maxPayableLevel = RANK_TO_MAX_LEVEL[currentRankId];
 
   return {
     memberRank,
@@ -125,10 +132,13 @@ export const useRank = () => {
     currentRankId,
     nextRank,
     isActive,
-    personallyEnrolled,
+    activeBronzeCount,
+    activeSilverCount,
+    activeGoldCount,
+    activePlatinumCount,
     progress,
-    additionalRequirements: getAdditionalRequirements(),
+    maxPayableLevel,
     rankHistory: historyQuery.data || [],
-    isLoading: rankQuery.isLoading || enrolledCountQuery.isLoading,
+    isLoading: rankQuery.isLoading,
   };
 };

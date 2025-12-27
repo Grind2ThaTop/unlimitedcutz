@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { RANKS, RANK_ORDER, RankId } from '@/lib/rankConfig';
+import { RANKS, RANK_ORDER, RankId, RANK_TO_MAX_LEVEL } from '@/lib/rankConfig';
 import type { Database } from '@/integrations/supabase/types';
 
 type MemberRank = Database['public']['Enums']['member_rank'];
@@ -48,7 +48,15 @@ const RankAssignmentDialog = ({
   onSubmit,
   isLoading,
 }: RankAssignmentDialogProps) => {
-  const currentRank = (user?.member_rank?.current_rank || 'rookie') as RankId;
+  // Map DB rank to RankId, handling any legacy values
+  const mapToRankId = (dbRank: MemberRank | undefined): RankId => {
+    if (!dbRank) return 'bronze';
+    if (dbRank === 'partner') return 'diamond'; // Legacy mapping
+    if (RANK_ORDER.includes(dbRank as RankId)) return dbRank as RankId;
+    return 'bronze';
+  };
+
+  const currentRank = mapToRankId(user?.member_rank?.current_rank);
   const [selectedRank, setSelectedRank] = useState<RankId>(currentRank);
   const [reason, setReason] = useState('');
   const [isActive, setIsActive] = useState(user?.member_rank?.is_active ?? true);
@@ -56,7 +64,7 @@ const RankAssignmentDialog = ({
   // Reset form when user changes
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen && user) {
-      setSelectedRank((user.member_rank?.current_rank || 'rookie') as RankId);
+      setSelectedRank(mapToRankId(user.member_rank?.current_rank));
       setIsActive(user.member_rank?.is_active ?? true);
       setReason('');
     }
@@ -67,13 +75,13 @@ const RankAssignmentDialog = ({
     if (!user || !reason.trim()) return;
     onSubmit({
       userId: user.id,
-      newRank: selectedRank,
+      newRank: selectedRank as MemberRank,
       reason: reason.trim(),
       isActive,
     });
   };
 
-  const requiresAdminApproval = selectedRank === 'executive' || selectedRank === 'partner';
+  const requiresAdminApproval = selectedRank === 'platinum' || selectedRank === 'diamond';
   const rankInfo = RANKS[selectedRank];
 
   if (!user) return null;
@@ -104,7 +112,7 @@ const RankAssignmentDialog = ({
               {RANK_ORDER.map((rankId) => {
                 const rank = RANKS[rankId];
                 const isSelected = selectedRank === rankId;
-                const needsApproval = rankId === 'executive' || rankId === 'partner';
+                const needsApproval = rankId === 'platinum' || rankId === 'diamond';
                 
                 return (
                   <button
@@ -139,7 +147,7 @@ const RankAssignmentDialog = ({
               <div className="text-sm">
                 <p className="font-medium text-amber-500">Admin Override Required</p>
                 <p className="text-muted-foreground">
-                  {RANKS[selectedRank].name} rank normally requires special qualifications. 
+                  {RANKS[selectedRank].name} rank normally requires {RANKS[selectedRank].qualificationText}. 
                   Your override will be logged.
                 </p>
               </div>
@@ -182,20 +190,10 @@ const RankAssignmentDialog = ({
           <div className="p-3 border border-border rounded-lg space-y-2">
             <p className="text-sm font-medium">Rank Benefits Preview:</p>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Matrix Levels: 1–{rankInfo.matrixLevels}</li>
-              <li>• Fast Start: {rankInfo.benefits.fastStart ? 'Yes' : 'No'}</li>
-              <li>• Matching Bonus: {
-                rankInfo.benefits.matching 
-                  ? typeof rankInfo.benefits.matching === 'string'
-                    ? 'Full'
-                    : `Level 1: ${rankInfo.benefits.matching.level1}%${rankInfo.benefits.matching.level2 ? `, Level 2: ${rankInfo.benefits.matching.level2}%` : ''}`
-                  : 'None'
-              }</li>
-              <li>• Pool Eligibility: {
-                Array.isArray(rankInfo.benefits.pools) 
-                  ? rankInfo.benefits.pools.join(', ') 
-                  : 'None'
-              }</li>
+              <li>• Commission Depth: Levels 1–{RANK_TO_MAX_LEVEL[selectedRank]}</li>
+              <li>• Fast Start: Yes</li>
+              <li>• Matching Bonus: {rankInfo.benefits.matchingDepth > 0 ? `${rankInfo.benefits.matchingDepth} levels` : 'None'}</li>
+              <li>• Pool Eligibility: {rankInfo.benefits.pools.length > 0 ? rankInfo.benefits.pools.join(', ') : 'None'}</li>
             </ul>
           </div>
         </div>

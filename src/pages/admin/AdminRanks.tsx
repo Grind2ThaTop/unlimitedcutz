@@ -115,7 +115,7 @@ const AdminRanks = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
@@ -129,21 +129,32 @@ const AdminRanks = () => {
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
                 <span className="text-lg">💎</span>
-                <span className="text-sm text-muted-foreground">Partners</span>
+                <span className="text-sm text-muted-foreground">Diamond</span>
               </div>
               <p className="text-2xl font-bold mt-1">
-                {users.filter(u => u.member_rank?.current_rank === 'partner').length}
+                {users.filter(u => u.member_rank?.current_rank === 'diamond').length}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-2">
-                <span className="text-lg">💼</span>
-                <span className="text-sm text-muted-foreground">Executives</span>
+                <span className="text-lg">🔵</span>
+                <span className="text-sm text-muted-foreground">Platinum</span>
               </div>
               <p className="text-2xl font-bold mt-1">
-                {users.filter(u => u.member_rank?.current_rank === 'executive').length}
+                {users.filter(u => u.member_rank?.current_rank === 'platinum').length}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🟡</span>
+                <span className="text-sm text-muted-foreground">Gold</span>
+              </div>
+              <p className="text-2xl font-bold mt-1">
+                {users.filter(u => u.member_rank?.current_rank === 'gold').length}
               </p>
             </CardContent>
           </Card>
@@ -167,7 +178,7 @@ const AdminRanks = () => {
           <CardHeader>
             <CardTitle>All Members</CardTitle>
             <CardDescription>
-              Click edit to assign or override ranks. Executive and Partner ranks require admin approval.
+              Click edit to assign or override ranks. Platinum and Diamond ranks require admin approval.
             </CardDescription>
           </CardHeader>
           <CardContent>

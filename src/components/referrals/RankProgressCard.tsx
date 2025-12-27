@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { useRank } from "@/hooks/useRank";
 import RankBadge from "./RankBadge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Lock, ArrowRight, TrendingUp, Users, Zap, Percent, Award } from "lucide-react";
+import { CheckCircle, Lock, ArrowRight, TrendingUp, Zap, Percent, Award, Users } from "lucide-react";
 import { getMatchingBonusDisplay, getPoolsDisplay } from "@/lib/rankConfig";
 
 const RankProgressCard = () => {
@@ -10,9 +10,8 @@ const RankProgressCard = () => {
     currentRank, 
     nextRank, 
     isActive, 
-    personallyEnrolled, 
     progress,
-    additionalRequirements,
+    maxPayableLevel,
     isLoading 
   } = useRank();
 
@@ -52,9 +51,9 @@ const RankProgressCard = () => {
           <div className="bg-background/50 rounded-lg p-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
               <TrendingUp className="w-3 h-3" />
-              Matrix Depth
+              Commission Depth
             </div>
-            <p className="font-display text-lg">1-{currentRank.matrixLevels}</p>
+            <p className="font-display text-lg">Levels 1-{maxPayableLevel}</p>
           </div>
           <div className="bg-background/50 rounded-lg p-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -66,7 +65,7 @@ const RankProgressCard = () => {
           <div className="bg-background/50 rounded-lg p-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
               <Percent className="w-3 h-3" />
-              Matching
+              Matching Bonus
             </div>
             <p className="font-display text-lg">{getMatchingBonusDisplay(currentRank)}</p>
           </div>
@@ -92,8 +91,8 @@ const RankProgressCard = () => {
           {/* Progress Bar */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Personal Enrollments</span>
-              <span className="font-medium">{personallyEnrolled} / {nextRank.requirements.personallyEnrolled}</span>
+              <span className="text-muted-foreground">{progress.label}</span>
+              <span className="font-medium">{progress.current} / {progress.required}</span>
             </div>
             <Progress value={progress.percentage} className="h-2" />
             <p className="text-xs text-muted-foreground">
@@ -104,22 +103,22 @@ const RankProgressCard = () => {
           {/* Requirements Checklist */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
-              {personallyEnrolled >= nextRank.requirements.personallyEnrolled ? (
+              {progress.current >= progress.required ? (
                 <CheckCircle className="w-4 h-4 text-green-500" />
               ) : (
                 <Users className="w-4 h-4 text-muted-foreground" />
               )}
-              <span className={personallyEnrolled >= nextRank.requirements.personallyEnrolled ? "text-green-500" : ""}>
-                {nextRank.requirements.personallyEnrolled} personally enrolled active members
+              <span className={progress.current >= progress.required ? "text-green-500" : ""}>
+                {nextRank.qualificationText}
               </span>
             </div>
 
-            {additionalRequirements.map((req, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm">
+            {nextRank.requirements.adminApproval && (
+              <div className="flex items-center gap-2 text-sm">
                 <Lock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{req}</span>
+                <span className="text-muted-foreground">Admin approval required</span>
               </div>
-            ))}
+            )}
           </div>
 
           {/* What You'll Unlock */}
@@ -128,17 +127,15 @@ const RankProgressCard = () => {
             <div className="flex flex-wrap gap-2">
               {nextRank.matrixLevels > currentRank.matrixLevels && (
                 <span className="text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded">
-                  +{nextRank.matrixLevels - currentRank.matrixLevels} Matrix Level{nextRank.matrixLevels - currentRank.matrixLevels > 1 ? 's' : ''}
+                  +{nextRank.matrixLevels - currentRank.matrixLevels} Commission Level{nextRank.matrixLevels - currentRank.matrixLevels > 1 ? 's' : ''}
                 </span>
               )}
-              {!currentRank.benefits.matching && nextRank.benefits.matching && (
+              {nextRank.benefits.matchingDepth > currentRank.benefits.matchingDepth && (
                 <span className="text-xs bg-purple-500/10 text-purple-500 px-2 py-1 rounded">
-                  Matching Bonus
-                </span>
-              )}
-              {nextRank.benefits.influencerBonuses && !currentRank.benefits.influencerBonuses && (
-                <span className="text-xs bg-red-500/10 text-red-500 px-2 py-1 rounded">
-                  Influencer Bonuses
+                  {currentRank.benefits.matchingDepth === 0 
+                    ? `Matching Bonus (${nextRank.benefits.matchingDepth} levels)` 
+                    : `+${nextRank.benefits.matchingDepth - currentRank.benefits.matchingDepth} Matching Level`
+                  }
                 </span>
               )}
               {nextRank.benefits.pools.length > currentRank.benefits.pools.length && (
@@ -157,7 +154,7 @@ const RankProgressCard = () => {
           <Award className="w-12 h-12 mx-auto text-purple-500 mb-2" />
           <p className="font-display text-lg">You've reached the top!</p>
           <p className="text-sm text-muted-foreground">
-            You're at the highest rank with full benefits unlocked.
+            Full 8-level matrix commissions and 4-level matching unlocked.
           </p>
         </div>
       )}
