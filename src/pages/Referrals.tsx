@@ -27,6 +27,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useReferrals } from "@/hooks/useReferrals";
+import { useAccountRole } from "@/hooks/useAccountRole";
 import { format } from "date-fns";
 import {
   Tooltip,
@@ -73,6 +74,17 @@ const Referrals = () => {
     isLoading,
   } = useReferrals();
 
+  const {
+    isBarber,
+    matrixPercent,
+    matchingL1,
+    matchingL2,
+    isLoading: accountRoleLoading,
+  } = useAccountRole();
+
+  const matrixRateLabel = isBarber ? 'Barber rate:' : 'Client rate:';
+  const matchingLabel = isBarber ? 'Barber:' : 'Client:';
+
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
@@ -89,7 +101,7 @@ const Referrals = () => {
   const matchingCommissions = commissions.filter(c => c.commission_type === 'matching_bonus');
   const matrixCommissions = commissions.filter(c => c.commission_type === 'matrix_membership');
 
-  if (isLoading) {
+  if (isLoading || accountRoleLoading) {
     return (
       <PortalLayout>
         <div className="flex items-center justify-center min-h-[50vh]">
@@ -163,15 +175,14 @@ const Referrals = () => {
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <h3 className="font-display text-sm">Matrix Income</h3>
-                <p className="text-xs text-muted-foreground truncate">3×8 forced • 2.5-5%/level</p>
+                <p className="text-xs text-muted-foreground truncate">3×8 forced • {matrixPercent}%/level</p>
               </div>
             </div>
             <div className="px-3 pb-3 pt-1 border-t border-blue-500/10">
               <p className="text-xs text-muted-foreground mb-2">Earn as the matrix fills — no personal recruiting required.</p>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between"><span className="text-muted-foreground">Matrix type:</span><span className="font-medium">3×8 Forced</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Client rate:</span><span className="font-medium text-blue-500">2.5%/level</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Barber rate:</span><span className="font-medium text-primary">5%/level</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{matrixRateLabel}</span><span className="font-medium text-primary">{matrixPercent}%/level</span></div>
               </div>
             </div>
           </div>
@@ -183,14 +194,13 @@ const Referrals = () => {
               </div>
               <div className="flex-1 min-w-0 text-left">
                 <h3 className="font-display text-sm">Matching Bonus</h3>
-                <p className="text-xs text-muted-foreground truncate">Role-based rates</p>
+                <p className="text-xs text-muted-foreground truncate">Your rates</p>
               </div>
             </div>
             <div className="px-3 pb-3 pt-1 border-t border-purple-500/10">
               <p className="text-xs text-muted-foreground mb-2">Earn a percentage of what your organization earns.</p>
               <div className="space-y-1 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">Client:</span><span className="font-medium text-blue-500">L1: 10% • L2: 5%</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Barber:</span><span className="font-medium text-primary">L1: 20% • L2: 10%</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">{matchingLabel}</span><span className="font-medium text-primary">L1: {matchingL1}% • L2: {matchingL2}%</span></div>
               </div>
             </div>
           </div>
