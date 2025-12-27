@@ -5,7 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const GHL_BASE_URL = "https://rest.gohighlevel.com/v1";
+// GoHighLevel API v2 - Correct base URL and required headers
+const GHL_BASE_URL = "https://services.leadconnectorhq.com";
 
 // GHL API Request Helper
 async function ghlRequest(method: string, path: string, body?: any) {
@@ -22,6 +23,7 @@ async function ghlRequest(method: string, path: string, body?: any) {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "Version": "2021-07-28", // Required GHL API version header
     },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -30,7 +32,7 @@ async function ghlRequest(method: string, path: string, body?: any) {
   
   if (!response.ok) {
     console.error(`[GHL-CORE] Error response:`, data);
-    throw new Error(data.message || `GHL API error: ${response.status}`);
+    throw new Error(data.message || data.error || `GHL API error: ${response.status}`);
   }
 
   console.log(`[GHL-CORE] Success:`, JSON.stringify(data).slice(0, 200));
@@ -48,9 +50,14 @@ async function upsertContact(input: {
   source?: string;
   country?: string;
   customField?: Record<string, any>;
+  locationId?: string;
   [key: string]: any;
 }) {
-  return ghlRequest("POST", "/contacts/upsert", input);
+  const locationId = input.locationId || Deno.env.get("GHL_LOCATION_ID");
+  if (!locationId) {
+    throw new Error("GHL_LOCATION_ID is required for contact operations");
+  }
+  return ghlRequest("POST", "/contacts/upsert", { ...input, locationId });
 }
 
 async function getContactById(id: string) {
@@ -177,19 +184,63 @@ serve(async (req) => {
     let result;
 
     switch (action) {
-      // Test connection - check if API key is configured
+      // Test connection - verify API key works by making actual API call
       case "test_connection":
-        const apiKey = Deno.env.get("GHL_API_KEY");
-        if (!apiKey) {
+        const testApiKey = Deno.env.get("GHL_API_KEY");
+        const testLocationId = Deno.env.get("GHL_LOCATION_ID");
+        
+        if (!testApiKey) {
           return new Response(
             JSON.stringify({ success: false, error: "GHL_API_KEY is not configured" }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-        return new Response(
-          JSON.stringify({ success: true, message: "GHL API key is configured" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        
+        if (!testLocationId) {
+          return new Response(
+            JSON.stringify({ success: false, error: "GHL_LOCATION_ID is not configured" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        try {
+          // Make actual API call to verify connection
+          const testResponse = await fetch(`${GHL_BASE_URL}/locations/${testLocationId}`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${testApiKey}`,
+              "Content-Type": "application/json",
+              "Version": "2021-07-28",
+            },
+          });
+          
+          const testData = await testResponse.json();
+          
+          if (!testResponse.ok) {
+            console.error("[GHL-CORE] Test connection failed:", testData);
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                error: testData.message || testData.error || `API error: ${testResponse.status}` 
+              }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: `Connected to GoHighLevel - Location: ${testData.location?.name || testLocationId}` 
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        } catch (testErr) {
+          console.error("[GHL-CORE] Test connection error:", testErr);
+          return new Response(
+            JSON.stringify({ success: false, error: testErr instanceof Error ? testErr.message : "Connection failed" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
 
       // Contacts
       case "upsertContact":
