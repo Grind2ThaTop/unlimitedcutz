@@ -385,7 +385,7 @@ const MatrixTreeVisualization = () => {
       {/* Matrix Info */}
       <div className="bg-background/50 rounded-lg p-3 mb-4 text-xs text-muted-foreground">
         <p className="font-medium text-foreground mb-1">This is a 3×8 Matrix.</p>
-        <p>Everyone joins the same system. When positions under you fill, you earn.</p>
+        <p>Shows your downline only. Open positions expand as members join above you.</p>
       </div>
 
       {/* Legend */}
@@ -418,7 +418,7 @@ const MatrixTreeVisualization = () => {
             <div key={levelIndex} className="flex flex-col items-center">
               {/* Level label */}
               <span className="text-xs text-muted-foreground mb-2">
-                {levelIndex === 0 ? 'You' : `Level ${levelIndex} (${Math.pow(3, levelIndex)} positions)`}
+                {levelIndex === 0 ? 'You' : `Level ${levelIndex} (${level.length} of ${Math.pow(3, levelIndex)} positions)`}
               </span>
               
               {/* Nodes */}
