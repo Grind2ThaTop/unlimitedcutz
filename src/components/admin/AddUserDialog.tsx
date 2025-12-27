@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { UserPlus, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, RefreshCw, Check, ChevronsUpDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,12 +25,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import type { Database } from '@/integrations/supabase/types';
 
 type MemberRank = Database['public']['Enums']['member_rank'];
 type AccountType = Database['public']['Enums']['account_type'];
+
+interface UserOption {
+  id: string;
+  email: string;
+  full_name: string | null;
+  referral_code: string | null;
+}
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -38,7 +59,7 @@ const formSchema = z.object({
   account_type: z.enum(['client', 'barber'] as const),
   initial_rank: z.enum(['rookie', 'hustla', 'grinder', 'influencer', 'executive', 'partner'] as const),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  referral_code: z.string().optional(),
+  sponsor_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,6 +76,7 @@ interface AddUserDialogProps {
     referral_code?: string;
   }) => void;
   isLoading: boolean;
+  users: UserOption[];
 }
 
 const generatePassword = (): string => {
@@ -66,8 +88,9 @@ const generatePassword = (): string => {
   return password;
 };
 
-const AddUserDialog = ({ open, onOpenChange, onSubmit, isLoading }: AddUserDialogProps) => {
+const AddUserDialog = ({ open, onOpenChange, onSubmit, isLoading, users }: AddUserDialogProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [sponsorOpen, setSponsorOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -77,22 +100,32 @@ const AddUserDialog = ({ open, onOpenChange, onSubmit, isLoading }: AddUserDialo
       account_type: 'client',
       initial_rank: 'rookie',
       password: generatePassword(),
-      referral_code: '',
+      sponsor_id: '',
     },
   });
+
+  const selectedSponsorId = form.watch('sponsor_id');
+  
+  const selectedSponsor = useMemo(() => {
+    if (!selectedSponsorId) return null;
+    return users.find(u => u.id === selectedSponsorId) || null;
+  }, [selectedSponsorId, users]);
 
   const handleGeneratePassword = () => {
     form.setValue('password', generatePassword());
   };
 
   const handleSubmit = (values: FormValues) => {
+    // Find the referral code for the selected sponsor
+    const sponsor = users.find(u => u.id === values.sponsor_id);
+    
     onSubmit({
       email: values.email,
       full_name: values.full_name,
       password: values.password,
       account_type: values.account_type,
       initial_rank: values.initial_rank,
-      referral_code: values.referral_code || undefined,
+      referral_code: sponsor?.referral_code || undefined,
     });
   };
 
@@ -104,7 +137,7 @@ const AddUserDialog = ({ open, onOpenChange, onSubmit, isLoading }: AddUserDialo
         account_type: 'client',
         initial_rank: 'rookie',
         password: generatePassword(),
-        referral_code: '',
+        sponsor_id: '',
       });
     }
     onOpenChange(newOpen);
@@ -249,13 +282,77 @@ const AddUserDialog = ({ open, onOpenChange, onSubmit, isLoading }: AddUserDialo
 
             <FormField
               control={form.control}
-              name="referral_code"
+              name="sponsor_id"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Referral Code (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ABC123" {...field} />
-                  </FormControl>
+                <FormItem className="flex flex-col">
+                  <FormLabel>Place Under (Optional)</FormLabel>
+                  <Popover open={sponsorOpen} onOpenChange={setSponsorOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={sponsorOpen}
+                          className={cn(
+                            "w-full justify-between font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {selectedSponsor 
+                            ? `${selectedSponsor.full_name || 'Unknown'} (${selectedSponsor.email})`
+                            : "Select a sponsor..."
+                          }
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[350px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search users..." />
+                        <CommandList>
+                          <CommandEmpty>No users found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value=""
+                              onSelect={() => {
+                                form.setValue('sponsor_id', '');
+                                setSponsorOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  !field.value ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              None (Root level)
+                            </CommandItem>
+                            {users.map((user) => (
+                              <CommandItem
+                                key={user.id}
+                                value={`${user.full_name || ''} ${user.email}`}
+                                onSelect={() => {
+                                  form.setValue('sponsor_id', user.id);
+                                  setSponsorOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === user.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span>{user.full_name || 'Unknown'}</span>
+                                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}

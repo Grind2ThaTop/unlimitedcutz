@@ -17,6 +17,7 @@ interface UserWithRank {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  referral_code: string | null;
   created_at: string;
   member_rank: {
     id: string;
@@ -198,6 +199,12 @@ const AdminRanks = () => {
         onOpenChange={setAddUserDialogOpen}
         onSubmit={handleCreateUser}
         isLoading={isCreatingUser}
+        users={users.map(u => ({
+          id: u.id,
+          email: u.email,
+          full_name: u.full_name,
+          referral_code: u.referral_code,
+        }))}
       />
     </PortalLayout>
   );
