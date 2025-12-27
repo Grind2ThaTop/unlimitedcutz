@@ -387,6 +387,15 @@ serve(async (req) => {
     }
 
     // ========== MATRIX INCOME (Role-based: Client 2.5%, Barber 5%) ==========
+    // Commission depth is now LOCKED by rank
+    const RANK_TO_MAX_LEVEL: Record<string, number> = {
+      bronze: 3,
+      silver: 4,
+      gold: 5,
+      platinum: 6,
+      diamond: 8,
+    };
+
     if (parentId) {
       const matrixCommissions: any[] = [];
       let currentParentId = parentId;
@@ -400,6 +409,31 @@ serve(async (req) => {
           .single();
 
         if (!parentNode) break;
+
+        // Get member rank to check commission depth eligibility
+        const { data: memberRank } = await supabaseAdmin
+          .from('member_ranks')
+          .select('current_rank, is_active')
+          .eq('user_id', parentNode.user_id)
+          .maybeSingle();
+
+        const userRank = memberRank?.current_rank || 'bronze';
+        const isActive = memberRank?.is_active !== false;
+        const maxPayableLevel = RANK_TO_MAX_LEVEL[userRank] || 3;
+
+        // RANK-BASED COMMISSION DEPTH: Only pay if level is within their unlocked depth
+        if (uplineLevel > maxPayableLevel || !isActive) {
+          logStep("Skipping commission - rank/level restriction", { 
+            userId: parentNode.user_id, 
+            rank: userRank,
+            maxLevel: maxPayableLevel,
+            currentLevel: uplineLevel,
+            isActive
+          });
+          currentParentId = parentNode.parent_id;
+          uplineLevel++;
+          continue;
+        }
 
         const { data: parentMembership } = await supabaseAdmin
           .from('memberships')
@@ -429,7 +463,7 @@ serve(async (req) => {
             commission_type: 'matrix_membership',
             level: uplineLevel,
             source_user_id: user_id,
-            description: `Matrix Level ${uplineLevel} (${accountType} ${matrixPercent}%)`,
+            description: `Matrix Level ${uplineLevel} (${accountType} ${matrixPercent}%, ${userRank} rank)`,
             status: 'pending',
           });
 
@@ -437,7 +471,8 @@ serve(async (req) => {
             userId: parentNode.user_id, 
             accountType, 
             matrixPercent, 
-            amount: commissionAmount 
+            amount: commissionAmount,
+            rank: userRank
           });
         }
 

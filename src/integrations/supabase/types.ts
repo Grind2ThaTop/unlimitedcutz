@@ -242,6 +242,10 @@ export type Database = {
       }
       member_ranks: {
         Row: {
+          active_bronze_count: number
+          active_gold_count: number
+          active_platinum_count: number
+          active_silver_count: number
           created_at: string
           current_rank: Database["public"]["Enums"]["member_rank"]
           id: string
@@ -253,6 +257,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_bronze_count?: number
+          active_gold_count?: number
+          active_platinum_count?: number
+          active_silver_count?: number
           created_at?: string
           current_rank?: Database["public"]["Enums"]["member_rank"]
           id?: string
@@ -264,6 +272,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_bronze_count?: number
+          active_gold_count?: number
+          active_platinum_count?: number
+          active_silver_count?: number
           created_at?: string
           current_rank?: Database["public"]["Enums"]["member_rank"]
           id?: string
@@ -688,11 +700,11 @@ export type Database = {
         | "product_commission"
         | "matching_bonus"
       member_rank:
-        | "rookie"
-        | "hustla"
-        | "grinder"
-        | "influencer"
-        | "executive"
+        | "bronze"
+        | "silver"
+        | "gold"
+        | "platinum"
+        | "diamond"
         | "partner"
       membership_status: "active" | "past_due" | "canceled" | "pending"
       payout_status: "pending" | "paid" | "canceled"
@@ -834,11 +846,11 @@ export const Constants = {
         "matching_bonus",
       ],
       member_rank: [
-        "rookie",
-        "hustla",
-        "grinder",
-        "influencer",
-        "executive",
+        "bronze",
+        "silver",
+        "gold",
+        "platinum",
+        "diamond",
         "partner",
       ],
       membership_status: ["active", "past_due", "canceled", "pending"],

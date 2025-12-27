@@ -25,19 +25,18 @@ const InfoIcon = forwardRef<SVGSVGElement, LucideProps>((props, ref) => (
 // Pre-calculated max positions for 3×8 matrix by rank
 // L1=3, L2=9, L3=27, L4=81, L5=243, L6=729, L7=2187, L8=6561
 const RANK_MAX_POSITIONS: Record<RankId, { levels: number; maxPositions: number }> = {
-  rookie: { levels: 3, maxPositions: 39 },       // 3+9+27
-  hustla: { levels: 4, maxPositions: 120 },      // 3+9+27+81
-  grinder: { levels: 5, maxPositions: 363 },     // +243
-  influencer: { levels: 6, maxPositions: 1092 }, // +729
-  executive: { levels: 7, maxPositions: 3279 },  // +2187
-  partner: { levels: 8, maxPositions: 9840 },    // +6561
+  bronze: { levels: 3, maxPositions: 39 },       // 3+9+27
+  silver: { levels: 4, maxPositions: 120 },      // 3+9+27+81
+  gold: { levels: 5, maxPositions: 363 },        // +243
+  platinum: { levels: 6, maxPositions: 1092 },   // +729
+  diamond: { levels: 8, maxPositions: 9840 },    // Full 8 levels
 };
 
 const BASE_COMMISSION = 1.25; // 2.5% of $50
 const ADDON_COMMISSION = 0.625; // 2.5% of $25
 
 const MatrixCalculator = () => {
-  const [selectedRank, setSelectedRank] = useState<RankId>('rookie');
+  const [selectedRank, setSelectedRank] = useState<RankId>('bronze');
   const [baseMembers, setBaseMembers] = useState<string>('');
   const [addonConnections, setAddonConnections] = useState<string>('');
 

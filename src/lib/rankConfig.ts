@@ -1,5 +1,5 @@
-// Rank configuration - LOCKED
-// These values define the rank system for the organization
+// Rank configuration - NEW COMP PLAN
+// These values define the rank system with commission depth unlocking
 
 // Account Types
 export type AccountType = 'client' | 'barber';
@@ -22,25 +22,21 @@ export const getMatchingRates = (accountType: AccountType): { l1: number; l2: nu
   return accountType === 'barber' ? BARBER_MATCHING : CLIENT_MATCHING;
 };
 
-export type RankId = 'rookie' | 'hustla' | 'grinder' | 'influencer' | 'executive' | 'partner';
+// New rank IDs matching database enum
+export type RankId = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
 export interface RankRequirements {
-  personallyEnrolled: number;
-  teamActivity?: boolean;
-  orgVolume?: boolean;
-  leadershipVolume?: boolean;
-  orgStability?: boolean;
-  elitePerformance?: boolean;
+  // New qualification logic based on downline ranks
+  activeBronze?: number;    // Number of active BRONZE members in downline
+  activeSilver?: number;    // Number of active SILVER members in downline
+  activeGold?: number;      // Number of active GOLD members in downline
+  activePlatinum?: number;  // Number of active PLATINUM members in downline
   adminApproval?: boolean;
 }
 
 export interface RankBenefits {
   fastStart: boolean;
-  matching: {
-    level1?: number;
-    level2?: number;
-  } | 'full' | null;
-  influencerBonuses?: boolean;
+  matchingDepth: number;  // How many levels of matching bonus (0 = none)
   pools: ('diamond' | 'crown')[];
 }
 
@@ -55,87 +51,99 @@ export interface RankConfig {
   requirements: RankRequirements;
   benefits: RankBenefits;
   description: string;
+  qualificationText: string;
 }
 
 export const RANKS: Record<RankId, RankConfig> = {
-  rookie: {
-    id: 'rookie',
-    name: 'Rookie',
-    emoji: '🔹',
+  bronze: {
+    id: 'bronze',
+    name: 'Bronze',
+    emoji: '🟤',
+    color: 'text-amber-700',
+    bgColor: 'bg-amber-700/10',
+    borderColor: 'border-amber-700/20',
+    matrixLevels: 3,
+    requirements: {},  // Just active $50/month membership
+    benefits: { fastStart: true, matchingDepth: 0, pools: [] },
+    description: 'Entry Level - Active $50/month membership',
+    qualificationText: 'Active $50/month membership',
+  },
+  silver: {
+    id: 'silver',
+    name: 'Silver',
+    emoji: '⚪',
+    color: 'text-gray-400',
+    bgColor: 'bg-gray-400/10',
+    borderColor: 'border-gray-400/20',
+    matrixLevels: 4,
+    requirements: { activeBronze: 2 },
+    benefits: { fastStart: true, matchingDepth: 0, pools: [] },
+    description: 'First builder unlock',
+    qualificationText: '2 active BRONZE members in downline',
+  },
+  gold: {
+    id: 'gold',
+    name: 'Gold',
+    emoji: '🟡',
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-yellow-500/20',
+    matrixLevels: 5,
+    requirements: { activeSilver: 2 },
+    benefits: { fastStart: true, matchingDepth: 2, pools: [] },
+    description: 'Leadership entry level',
+    qualificationText: '2 active SILVER members in downline',
+  },
+  platinum: {
+    id: 'platinum',
+    name: 'Platinum',
+    emoji: '🔵',
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
-    matrixLevels: 3,
-    requirements: { personallyEnrolled: 0 },
-    benefits: { fastStart: true, matching: null, pools: [] },
-    description: 'Entry Level - You just locked in your position.',
-  },
-  hustla: {
-    id: 'hustla',
-    name: 'Hustla',
-    emoji: '🟤',
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-600/10',
-    borderColor: 'border-amber-600/20',
-    matrixLevels: 4,
-    requirements: { personallyEnrolled: 3 },
-    benefits: { fastStart: true, matching: null, pools: [] },
-    description: 'You move. You bring people.',
-  },
-  grinder: {
-    id: 'grinder',
-    name: 'Grinder',
-    emoji: '⚫',
-    color: 'text-slate-400',
-    bgColor: 'bg-slate-400/10',
-    borderColor: 'border-slate-400/20',
-    matrixLevels: 5,
-    requirements: { personallyEnrolled: 5, teamActivity: true },
-    benefits: { fastStart: true, matching: { level1: 10 }, pools: [] },
-    description: 'Consistent builder. Team starter.',
-  },
-  influencer: {
-    id: 'influencer',
-    name: 'Influencer',
-    emoji: '🔴',
-    color: 'text-red-500',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/20',
     matrixLevels: 6,
-    requirements: { personallyEnrolled: 10, orgVolume: true },
-    benefits: { fastStart: true, matching: { level1: 10, level2: 5 }, influencerBonuses: true, pools: [] },
-    description: 'You move volume and people follow.',
+    requirements: { activeGold: 3 },
+    benefits: { fastStart: true, matchingDepth: 3, pools: ['diamond'] },
+    description: 'Builder + Leader',
+    qualificationText: '3 active GOLD members in downline',
   },
-  executive: {
-    id: 'executive',
-    name: 'Executive',
-    emoji: '💼',
-    color: 'text-slate-600',
-    bgColor: 'bg-slate-600/10',
-    borderColor: 'border-slate-600/20',
-    matrixLevels: 7,
-    requirements: { personallyEnrolled: 10, leadershipVolume: true, orgStability: true },
-    benefits: { fastStart: true, matching: 'full', pools: ['diamond'] },
-    description: 'You built a real organization.',
-  },
-  partner: {
-    id: 'partner',
-    name: 'Partner',
+  diamond: {
+    id: 'diamond',
+    name: 'Diamond',
     emoji: '💎',
     color: 'text-purple-500',
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     matrixLevels: 8,
-    requirements: { personallyEnrolled: 10, elitePerformance: true, adminApproval: true },
-    benefits: { fastStart: true, matching: 'full', pools: ['diamond', 'crown'] },
-    description: 'Ownership mindset. Long-term builder.',
+    requirements: { activePlatinum: 4 },
+    benefits: { fastStart: true, matchingDepth: 4, pools: ['diamond', 'crown'] },
+    description: 'Top-tier leadership',
+    qualificationText: '4 active PLATINUM members in downline',
   },
 };
 
-export const RANK_ORDER: RankId[] = ['rookie', 'hustla', 'grinder', 'influencer', 'executive', 'partner'];
+export const RANK_ORDER: RankId[] = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+
+// Map rank to maximum payable matrix level
+export const RANK_TO_MAX_LEVEL: Record<RankId, number> = {
+  bronze: 3,
+  silver: 4,
+  gold: 5,
+  platinum: 6,
+  diamond: 8,
+};
+
+// Map rank to matching bonus depth
+export const RANK_TO_MATCHING_DEPTH: Record<RankId, number> = {
+  bronze: 0,
+  silver: 0,
+  gold: 2,
+  platinum: 3,
+  diamond: 4,
+};
 
 export const getRankByIndex = (index: number): RankConfig => {
-  return RANKS[RANK_ORDER[index]] || RANKS.rookie;
+  return RANKS[RANK_ORDER[index]] || RANKS.bronze;
 };
 
 export const getNextRank = (currentRank: RankId): RankConfig | null => {
@@ -145,12 +153,8 @@ export const getNextRank = (currentRank: RankId): RankConfig | null => {
 };
 
 export const getMatchingBonusDisplay = (rank: RankConfig): string => {
-  if (!rank.benefits.matching) return 'No';
-  if (rank.benefits.matching === 'full') return 'Full';
-  const parts: string[] = [];
-  if (rank.benefits.matching.level1) parts.push(`L1: ${rank.benefits.matching.level1}%`);
-  if (rank.benefits.matching.level2) parts.push(`L2: ${rank.benefits.matching.level2}%`);
-  return parts.join(', ') || 'No';
+  if (rank.benefits.matchingDepth === 0) return 'No';
+  return `${rank.benefits.matchingDepth} levels`;
 };
 
 export const getPoolsDisplay = (rank: RankConfig): string => {
