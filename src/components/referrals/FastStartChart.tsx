@@ -8,7 +8,7 @@ import {
 import { Zap } from "lucide-react";
 
 const chartData = [
-  { level: "Level 1", amount: 25, description: "Direct referral bonus" },
+  { level: "Level 1", amount: 20, description: "Direct referral bonus" },
   { level: "Level 2", amount: 10, description: "2nd generation bonus" },
   { level: "Level 3", amount: 5, description: "3rd generation bonus" },
 ];
@@ -74,7 +74,7 @@ const FastStartChart = () => {
 
       <div className="mt-4 text-center">
         <p className="text-sm text-muted-foreground">
-          Total potential: <span className="font-medium text-green-500">$40</span> per referral chain
+          Total potential: <span className="font-medium text-green-500">$35</span> per referral chain
         </p>
       </div>
     </div>
