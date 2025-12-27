@@ -28,16 +28,20 @@ interface MatrixNodeData {
     account_type: string;
     barber_verified: boolean;
   } | null;
+  memberRank: {
+    is_active: boolean;
+  } | null;
 }
 
 interface TreeNodeData {
   id: string;
-  status: 'filled' | 'open' | 'root' | 'barber';
+  status: 'filled' | 'open' | 'root' | 'barber' | 'inactive';
   name?: string;
   email?: string;
   level: number;
   positionIndex?: number;
   isBarber?: boolean;
+  isActive?: boolean;
   left: TreeNodeData | null;
   middle: TreeNodeData | null;
   right: TreeNodeData | null;
@@ -51,6 +55,8 @@ const NodeIcon = ({ status }: { status: TreeNodeData['status'] }) => {
       return <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'barber':
       return <Scissors className="w-3 h-3 sm:w-4 sm:h-4" />;
+    case 'inactive':
+      return <User className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'open':
       return <User className="w-3 h-3 sm:w-4 sm:h-4 opacity-40" />;
   }
@@ -60,6 +66,7 @@ const statusStyles = {
   root: 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background',
   filled: 'bg-green-500/20 text-green-500 border border-green-500/50',
   barber: 'bg-secondary text-secondary-foreground border-2 border-secondary-foreground',
+  inactive: 'bg-red-500/20 text-red-500 border border-red-500/50',
   open: 'bg-muted/50 text-muted-foreground border border-dashed border-muted-foreground/30',
 };
 
@@ -67,6 +74,7 @@ const statusLabels = {
   root: 'Root Node',
   filled: 'Active Member',
   barber: 'Barber',
+  inactive: 'Inactive/Paused',
   open: 'Open Position',
 };
 
@@ -213,9 +221,20 @@ const buildHierarchicalTree = (nodes: MatrixNodeData[]): TreeNodeData | null => 
     const middleChildData = matrixNode.middle_child ? nodeMap.get(matrixNode.middle_child) : null;
     const rightChildData = matrixNode.right_child ? nodeMap.get(matrixNode.right_child) : null;
 
-    // Determine status - barbers show as 'barber' status (black)
+    // Determine status - check active first, then barber vs client
     const isBarber = matrixNode.accountRole?.account_type === 'barber';
-    let status: TreeNodeData['status'] = isRoot ? 'root' : (isBarber ? 'barber' : 'filled');
+    const isActive = matrixNode.memberRank?.is_active !== false; // Default to true if no rank data
+    
+    let status: TreeNodeData['status'];
+    if (isRoot) {
+      status = 'root';
+    } else if (!isActive) {
+      status = 'inactive';
+    } else if (isBarber) {
+      status = 'barber';
+    } else {
+      status = 'filled';
+    }
 
     return {
       id: matrixNode.id,
@@ -225,6 +244,7 @@ const buildHierarchicalTree = (nodes: MatrixNodeData[]): TreeNodeData | null => 
       level: matrixNode.level,
       positionIndex: matrixNode.position_index || undefined,
       isBarber,
+      isActive,
       left: leftChildData ? buildNode(leftChildData) : null,
       middle: middleChildData ? buildNode(middleChildData) : null,
       right: rightChildData ? buildNode(rightChildData) : null,
@@ -246,12 +266,11 @@ const createEmptyRoot = (): TreeNodeData => ({
 });
 
 // Count filled and open positions
-const countNodes = (node: TreeNodeData | null, maxDepth: number, currentDepth: number = 0): { filled: number; open: number } => {
-  if (currentDepth >= maxDepth) return { filled: 0, open: 0 };
+const countNodes = (node: TreeNodeData | null, maxDepth: number, currentDepth: number = 0): { filled: number; open: number; inactive: number } => {
+  if (currentDepth >= maxDepth) return { filled: 0, open: 0, inactive: 0 };
   
   if (!node) {
     // This node is open, count its theoretical children
-    const childCounts = currentDepth < maxDepth - 1 ? 3 : 0;
     let totalOpen = 1;
     if (currentDepth < maxDepth - 1) {
       for (let i = 0; i < 3; i++) {
@@ -259,12 +278,14 @@ const countNodes = (node: TreeNodeData | null, maxDepth: number, currentDepth: n
         totalOpen += childResult.open;
       }
     }
-    return { filled: 0, open: totalOpen };
+    return { filled: 0, open: totalOpen, inactive: 0 };
   }
 
-  const isFilled = node.status === 'filled' || node.status === 'root' || node.status === 'barber';
-  let filled = isFilled ? 1 : 0;
-  let open = !isFilled ? 1 : 0;
+  const isFilledActive = node.status === 'filled' || node.status === 'root' || node.status === 'barber';
+  const isInactive = node.status === 'inactive';
+  let filled = isFilledActive ? 1 : 0;
+  let open = node.status === 'open' ? 1 : 0;
+  let inactive = isInactive ? 1 : 0;
 
   if (currentDepth < maxDepth - 1) {
     const leftResult = countNodes(node.left, maxDepth, currentDepth + 1);
@@ -273,9 +294,10 @@ const countNodes = (node: TreeNodeData | null, maxDepth: number, currentDepth: n
 
     filled += leftResult.filled + middleResult.filled + rightResult.filled;
     open += leftResult.open + middleResult.open + rightResult.open;
+    inactive += leftResult.inactive + middleResult.inactive + rightResult.inactive;
   }
 
-  return { filled, open };
+  return { filled, open, inactive };
 };
 
 const AdminMatrixTree = () => {
@@ -296,8 +318,8 @@ const AdminMatrixTree = () => {
 
       const userIds = [...new Set(nodes.map(n => n.user_id))];
 
-      // Fetch profiles and account roles in parallel
-      const [profilesResult, accountRolesResult] = await Promise.all([
+      // Fetch profiles, account roles, and member ranks in parallel
+      const [profilesResult, accountRolesResult, memberRanksResult] = await Promise.all([
         supabase
           .from('profiles')
           .select('id, full_name, email')
@@ -305,19 +327,26 @@ const AdminMatrixTree = () => {
         supabase
           .from('account_roles')
           .select('user_id, account_type, barber_verified')
+          .in('user_id', userIds),
+        supabase
+          .from('member_ranks')
+          .select('user_id, is_active')
           .in('user_id', userIds)
       ]);
 
       if (profilesResult.error) throw profilesResult.error;
       if (accountRolesResult.error) throw accountRolesResult.error;
+      if (memberRanksResult.error) throw memberRanksResult.error;
 
       const profileMap = new Map(profilesResult.data?.map(p => [p.id, p]) || []);
       const accountRoleMap = new Map(accountRolesResult.data?.map(ar => [ar.user_id, ar]) || []);
+      const memberRankMap = new Map(memberRanksResult.data?.map(mr => [mr.user_id, mr]) || []);
 
       return nodes.map(node => ({
         ...node,
         profiles: profileMap.get(node.user_id) || null,
         accountRole: accountRoleMap.get(node.user_id) || null,
+        memberRank: memberRankMap.get(node.user_id) || null,
       })) as MatrixNodeData[];
     },
   });
@@ -326,8 +355,8 @@ const AdminMatrixTree = () => {
     ? buildHierarchicalTree(matrixNodes) 
     : createEmptyRoot();
 
-  const counts = treeRoot ? countNodes(treeRoot, showLevels) : { filled: 0, open: 1 };
-  const totalPositions = counts.filled + counts.open;
+  const counts = treeRoot ? countNodes(treeRoot, showLevels) : { filled: 0, open: 1, inactive: 0 };
+  const totalPositions = counts.filled + counts.open + counts.inactive;
 
   return (
     <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-6">
@@ -395,6 +424,10 @@ const AdminMatrixTree = () => {
           <span>Barber</span>
         </div>
         <div className="flex items-center gap-1.5">
+          <div className="w-4 h-4 rounded-full bg-red-500/30 border border-red-500" />
+          <span>Inactive</span>
+        </div>
+        <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 rounded-full border border-dashed border-muted-foreground/50" />
           <span>Open</span>
         </div>
@@ -413,10 +446,14 @@ const AdminMatrixTree = () => {
       )}
 
       {/* Stats summary */}
-      <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-border/50">
+      <div className="grid grid-cols-4 gap-4 mt-6 pt-4 border-t border-border/50">
         <div className="text-center">
           <p className="text-2xl font-display text-green-500">{counts.filled}</p>
-          <p className="text-xs text-muted-foreground">Filled</p>
+          <p className="text-xs text-muted-foreground">Active</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-display text-red-500">{counts.inactive}</p>
+          <p className="text-xs text-muted-foreground">Inactive</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-display text-muted-foreground">{counts.open}</p>
