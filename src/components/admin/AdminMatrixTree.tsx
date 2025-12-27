@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GitBranch, User, UserCheck, ChevronDown, ChevronUp, Loader2, Users } from "lucide-react";
+import { GitBranch, User, UserCheck, ChevronDown, ChevronUp, Loader2, Users, Scissors } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -24,15 +24,20 @@ interface MatrixNodeData {
     full_name: string | null;
     email: string;
   } | null;
+  accountRole: {
+    account_type: string;
+    barber_verified: boolean;
+  } | null;
 }
 
 interface TreeNodeData {
   id: string;
-  status: 'filled' | 'open' | 'root';
+  status: 'filled' | 'open' | 'root' | 'barber';
   name?: string;
   email?: string;
   level: number;
   positionIndex?: number;
+  isBarber?: boolean;
   left: TreeNodeData | null;
   middle: TreeNodeData | null;
   right: TreeNodeData | null;
@@ -44,6 +49,8 @@ const NodeIcon = ({ status }: { status: TreeNodeData['status'] }) => {
       return <Users className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'filled':
       return <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />;
+    case 'barber':
+      return <Scissors className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'open':
       return <User className="w-3 h-3 sm:w-4 sm:h-4 opacity-40" />;
   }
@@ -52,12 +59,14 @@ const NodeIcon = ({ status }: { status: TreeNodeData['status'] }) => {
 const statusStyles = {
   root: 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background',
   filled: 'bg-green-500/20 text-green-500 border border-green-500/50',
+  barber: 'bg-secondary text-secondary-foreground border-2 border-secondary-foreground',
   open: 'bg-muted/50 text-muted-foreground border border-dashed border-muted-foreground/30',
 };
 
 const statusLabels = {
   root: 'Root Node',
   filled: 'Active Member',
+  barber: 'Barber',
   open: 'Open Position',
 };
 
@@ -204,13 +213,18 @@ const buildHierarchicalTree = (nodes: MatrixNodeData[]): TreeNodeData | null => 
     const middleChildData = matrixNode.middle_child ? nodeMap.get(matrixNode.middle_child) : null;
     const rightChildData = matrixNode.right_child ? nodeMap.get(matrixNode.right_child) : null;
 
+    // Determine status - barbers show as 'barber' status (black)
+    const isBarber = matrixNode.accountRole?.account_type === 'barber';
+    let status: TreeNodeData['status'] = isRoot ? 'root' : (isBarber ? 'barber' : 'filled');
+
     return {
       id: matrixNode.id,
-      status: isRoot ? 'root' : 'filled',
+      status,
       name: getDisplayName(matrixNode),
       email: matrixNode.profiles?.email,
       level: matrixNode.level,
       positionIndex: matrixNode.position_index || undefined,
+      isBarber,
       left: leftChildData ? buildNode(leftChildData) : null,
       middle: middleChildData ? buildNode(middleChildData) : null,
       right: rightChildData ? buildNode(rightChildData) : null,
@@ -248,7 +262,7 @@ const countNodes = (node: TreeNodeData | null, maxDepth: number, currentDepth: n
     return { filled: 0, open: totalOpen };
   }
 
-  const isFilled = node.status === 'filled' || node.status === 'root';
+  const isFilled = node.status === 'filled' || node.status === 'root' || node.status === 'barber';
   let filled = isFilled ? 1 : 0;
   let open = !isFilled ? 1 : 0;
 
@@ -282,18 +296,28 @@ const AdminMatrixTree = () => {
 
       const userIds = [...new Set(nodes.map(n => n.user_id))];
 
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', userIds);
+      // Fetch profiles and account roles in parallel
+      const [profilesResult, accountRolesResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds),
+        supabase
+          .from('account_roles')
+          .select('user_id, account_type, barber_verified')
+          .in('user_id', userIds)
+      ]);
 
-      if (profilesError) throw profilesError;
+      if (profilesResult.error) throw profilesResult.error;
+      if (accountRolesResult.error) throw accountRolesResult.error;
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const profileMap = new Map(profilesResult.data?.map(p => [p.id, p]) || []);
+      const accountRoleMap = new Map(accountRolesResult.data?.map(ar => [ar.user_id, ar]) || []);
 
       return nodes.map(node => ({
         ...node,
         profiles: profileMap.get(node.user_id) || null,
+        accountRole: accountRoleMap.get(node.user_id) || null,
       })) as MatrixNodeData[];
     },
   });
@@ -364,7 +388,11 @@ const AdminMatrixTree = () => {
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 rounded-full bg-green-500/50 border border-green-500" />
-          <span>Filled</span>
+          <span>Client</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-4 h-4 rounded-full bg-secondary border-2 border-secondary-foreground" />
+          <span>Barber</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-4 h-4 rounded-full border border-dashed border-muted-foreground/50" />

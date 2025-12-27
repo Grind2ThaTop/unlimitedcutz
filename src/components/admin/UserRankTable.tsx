@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Search, History, Edit, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Search, History, Edit, ToggleLeft, ToggleRight, Scissors } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -16,6 +17,7 @@ import { RANKS, RankId } from '@/lib/rankConfig';
 import type { Database } from '@/integrations/supabase/types';
 
 type MemberRank = Database['public']['Enums']['member_rank'];
+type AccountType = Database['public']['Enums']['account_type'];
 
 interface UserWithRank {
   id: string;
@@ -30,6 +32,10 @@ interface UserWithRank {
     personally_enrolled_count: number;
     last_evaluated_at: string | null;
     rank_qualified_at: string | null;
+  } | null;
+  account_role?: {
+    account_type: AccountType;
+    barber_verified: boolean;
   } | null;
 }
 
@@ -136,20 +142,50 @@ const UserRankTable = ({
                 const rank = RANKS[rankId] || RANKS.bronze;
                 const isActive = user.member_rank?.is_active ?? true;
 
+                const isBarber = user.account_role?.account_type === 'barber';
+                const barberVerified = user.account_role?.barber_verified ?? false;
+
                 return (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={user.avatar_url || ''} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(user.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={user.avatar_url || ''} />
+                            <AvatarFallback className={cn(
+                              "text-xs",
+                              isBarber 
+                                ? "bg-secondary text-secondary-foreground" 
+                                : "bg-primary/10 text-primary"
+                            )}>
+                              {getInitials(user.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {isBarber && (
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-secondary border-2 border-background flex items-center justify-center">
+                              <Scissors className="w-2.5 h-2.5 text-secondary-foreground" />
+                            </div>
+                          )}
+                        </div>
                         <div className="min-w-0">
-                          <p className="font-medium truncate">
-                            {user.full_name || 'Unnamed User'}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium truncate">
+                              {user.full_name || 'Unnamed User'}
+                            </p>
+                            {isBarber && (
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "text-[10px] px-1.5 py-0",
+                                  barberVerified 
+                                    ? "bg-secondary text-secondary-foreground border-secondary-foreground" 
+                                    : "bg-amber-500/20 text-amber-500 border-amber-500/50"
+                                )}
+                              >
+                                {barberVerified ? 'BARBER' : 'PENDING'}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">
                             {user.email}
                           </p>
