@@ -120,6 +120,7 @@ const UserRankTable = ({
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead>User</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Current Rank</TableHead>
               <TableHead className="hidden md:table-cell">Enrolled</TableHead>
               <TableHead className="hidden md:table-cell">Status</TableHead>
@@ -130,7 +131,7 @@ const UserRankTable = ({
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No users found
                 </TableCell>
               </TableRow>
@@ -191,6 +192,19 @@ const UserRankTable = ({
                           </p>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "font-medium",
+                          isBarber
+                            ? "bg-secondary text-secondary-foreground border-secondary"
+                            : "bg-muted text-muted-foreground border-border"
+                        )}
+                      >
+                        {isBarber ? 'Barber' : 'Client'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge 
