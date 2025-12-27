@@ -71,18 +71,30 @@ const BarberSignup = () => {
           variant: "destructive",
         });
       } else if (data.user) {
-        // Update account_roles to barber type
-        const { error: updateError } = await supabase
-          .from('account_roles')
-          .update({ 
-            account_type: 'barber',
-            matrix_percent: 5, // Barber rate
-            barber_verified: false // Not verified yet
-          })
-          .eq('user_id', data.user.id);
+        // Barber type is now set by the handle_new_user trigger server-side
+        // based on the account_type metadata passed during signup
         
-        if (updateError) {
-          console.error('Error setting barber type:', updateError);
+        // Get the referral sponsor_id for matrix placement
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('referred_by')
+          .eq('id', data.user.id)
+          .single();
+        
+        // Trigger matrix placement for barber immediately
+        try {
+          const { error: placementError } = await supabase.functions.invoke('process-new-member', {
+            body: {
+              user_id: data.user.id,
+              sponsor_id: profileData?.referred_by || null,
+            },
+          });
+          
+          if (placementError) {
+            console.error('Placement error:', placementError);
+          }
+        } catch (placementErr) {
+          console.error('Failed to trigger placement:', placementErr);
         }
         
         toast({
