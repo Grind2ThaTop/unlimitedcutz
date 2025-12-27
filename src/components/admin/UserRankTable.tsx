@@ -130,8 +130,10 @@ const UserRankTable = ({
               </TableRow>
             ) : (
               filteredUsers.map((user) => {
-                const rankId = (user.member_rank?.current_rank || 'rookie') as RankId;
-                const rank = RANKS[rankId];
+                // Map DB rank to RankId, handling legacy values
+                const dbRank = user.member_rank?.current_rank || 'bronze';
+                const rankId: RankId = dbRank === 'partner' ? 'diamond' : (dbRank as RankId);
+                const rank = RANKS[rankId] || RANKS.bronze;
                 const isActive = user.member_rank?.is_active ?? true;
 
                 return (
