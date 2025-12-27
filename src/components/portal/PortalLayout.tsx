@@ -16,6 +16,8 @@ import {
   Shield,
   Activity,
   Wallet,
+  Settings,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,8 +55,12 @@ const PortalLayout = ({ children }: PortalLayoutProps) => {
     ...(!isBarber ? [{ icon: Users, label: "Connections", href: "/portal/connections" }] : []),
     { icon: Calendar, label: isBarber ? "Book a Client" : "Book Appointment", href: "/portal/booking" },
     { icon: Wallet, label: "Payouts", href: "/portal/payouts" },
+    { icon: CreditCard, label: "Billing", href: "/portal/billing" },
     { icon: Share2, label: "Referral Center", href: "/portal/referrals" },
     { icon: ShoppingBag, label: "Product Store", href: "/portal/store" },
+    // Barber-only: Booth Rent conversion option
+    ...(isBarber ? [{ icon: Banknote, label: "Booth Rent Payment", href: "/portal/booth-rent" }] : []),
+    { icon: Settings, label: "Settings", href: "/portal/settings" },
   ];
 
   return (
