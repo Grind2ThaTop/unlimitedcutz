@@ -6,6 +6,8 @@ import type { Database } from '@/integrations/supabase/types';
 
 type MemberRank = Database['public']['Enums']['member_rank'];
 
+type AccountType = Database['public']['Enums']['account_type'];
+
 interface UserWithRank {
   id: string;
   email: string;
@@ -20,6 +22,10 @@ interface UserWithRank {
     personally_enrolled_count: number;
     last_evaluated_at: string | null;
     rank_qualified_at: string | null;
+  } | null;
+  account_role?: {
+    account_type: AccountType;
+    barber_verified: boolean;
   } | null;
 }
 
@@ -74,9 +80,17 @@ export const useAdmin = () => {
       
       if (ranksError) throw ranksError;
 
+      // Get all account_roles
+      const { data: accountRoles, error: accountRolesError } = await supabase
+        .from('account_roles')
+        .select('user_id, account_type, barber_verified');
+      
+      if (accountRolesError) throw accountRolesError;
+
       // Combine the data
       const usersWithRanks: UserWithRank[] = (profiles || []).map(profile => {
         const rank = ranks?.find(r => r.user_id === profile.id);
+        const accountRole = accountRoles?.find(ar => ar.user_id === profile.id);
         return {
           ...profile,
           member_rank: rank ? {
@@ -86,6 +100,10 @@ export const useAdmin = () => {
             personally_enrolled_count: rank.personally_enrolled_count,
             last_evaluated_at: rank.last_evaluated_at,
             rank_qualified_at: rank.rank_qualified_at,
+          } : null,
+          account_role: accountRole ? {
+            account_type: accountRole.account_type,
+            barber_verified: accountRole.barber_verified,
           } : null,
         };
       });
