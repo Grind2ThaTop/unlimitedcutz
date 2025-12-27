@@ -148,18 +148,28 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const action = url.searchParams.get("action");
+    let action = url.searchParams.get("action");
+    let body: any = {};
+
+    // Parse body for POST/PUT requests
+    if (req.method === "POST" || req.method === "PUT") {
+      try {
+        body = await req.json();
+      } catch {
+        body = {};
+      }
+    }
+
+    // Allow action to be passed in body as well (for supabase.functions.invoke)
+    if (!action && body.action) {
+      action = body.action;
+    }
 
     if (!action) {
       return new Response(
-        JSON.stringify({ error: "Missing 'action' query parameter" }),
+        JSON.stringify({ error: "Missing 'action' parameter" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-    }
-
-    let body = {};
-    if (req.method === "POST" || req.method === "PUT") {
-      body = await req.json();
     }
 
     console.log(`[GHL-CORE] Action: ${action}, Body:`, JSON.stringify(body).slice(0, 500));
@@ -167,6 +177,20 @@ serve(async (req) => {
     let result;
 
     switch (action) {
+      // Test connection - check if API key is configured
+      case "test_connection":
+        const apiKey = Deno.env.get("GHL_API_KEY");
+        if (!apiKey) {
+          return new Response(
+            JSON.stringify({ success: false, error: "GHL_API_KEY is not configured" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        return new Response(
+          JSON.stringify({ success: true, message: "GHL API key is configured" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+
       // Contacts
       case "upsertContact":
         result = await upsertContact(body as any);
