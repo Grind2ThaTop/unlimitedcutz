@@ -105,7 +105,7 @@ serve(async (req) => {
       .single();
 
     const settings: CompensationSettings = settingsData?.value || {
-      fast_start: { level_1: 25, level_2: 10, level_3: 5 },
+      fast_start: { level_1: 20, level_2: 10, level_3: 5 },
       matrix: { per_placement: 5, max_depth: 8 },
       matching: { level_1_percent: 10, level_2_percent: 5 }
     };
