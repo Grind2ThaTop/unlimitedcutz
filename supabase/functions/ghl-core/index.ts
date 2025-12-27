@@ -127,10 +127,10 @@ function buildDiagnosticMessage(diagnostics: ReturnType<typeof getTokenDiagnosti
 // ==================== GHL API REQUEST HELPER ====================
 
 async function ghlRequest(method: string, path: string, body?: any) {
-  const rawApiKey = Deno.env.get("GHL_API_KEY");
+  const rawApiKey = Deno.env.get("GHL_API_Sub_Account_Key");
   
   if (!rawApiKey) {
-    throw new Error("GHL_API_KEY is not configured");
+    throw new Error("GHL_API_Sub_Account_Key is not configured");
   }
 
   const apiKey = normalizeToken(rawApiKey);
@@ -302,7 +302,7 @@ serve(async (req) => {
 
     switch (action) {
       case "test_connection": {
-        const rawApiKey = Deno.env.get("GHL_API_KEY");
+        const rawApiKey = Deno.env.get("GHL_API_Sub_Account_Key");
         const testLocationId = Deno.env.get("GHL_LOCATION_ID");
         
         // Check if secrets are configured
@@ -310,7 +310,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               success: false, 
-              error: "GHL_API_KEY is not configured",
+              error: "GHL_API_Sub_Account_Key is not configured",
               diagnostics: null
             }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
