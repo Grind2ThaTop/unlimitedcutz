@@ -172,27 +172,25 @@ Deno.serve(async (req) => {
     }
 
     // Call process-new-member to handle matrix placement
-    console.log('Calling process-new-member for matrix placement');
-    const processResponse = await fetch(
-      `${supabaseUrl}/functions/v1/process-new-member`,
+    console.log('Calling process-new-member for matrix placement', {
+      user_id: newUser.user.id,
+      sponsor_id: sponsorId,
+    });
+
+    const { data: matrixResult, error: matrixError } = await supabaseAdmin.functions.invoke(
+      'process-new-member',
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
+        body: {
           user_id: newUser.user.id,
           sponsor_id: sponsorId,
-        }),
+        },
       }
     );
 
-    if (!processResponse.ok) {
-      const errorText = await processResponse.text();
-      console.error('Failed to process matrix placement:', errorText);
+    if (matrixError) {
+      console.error('Failed to process matrix placement:', matrixError);
     } else {
-      console.log('Matrix placement processed successfully');
+      console.log('Matrix placement processed successfully:', matrixResult);
     }
 
     console.log('User setup complete:', newUser.user.id);
