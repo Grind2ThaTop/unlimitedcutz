@@ -155,6 +155,46 @@ Deno.serve(async (req) => {
         reason: 'Admin manual creation',
       });
 
+    // Process matrix placement by calling process-new-member function
+    // Find sponsor_id from referral_code if provided
+    let sponsorId: string | null = null;
+    if (referral_code) {
+      const { data: sponsorProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('referral_code', referral_code)
+        .maybeSingle();
+      
+      if (sponsorProfile) {
+        sponsorId = sponsorProfile.id;
+        console.log('Found sponsor:', sponsorId);
+      }
+    }
+
+    // Call process-new-member to handle matrix placement
+    console.log('Calling process-new-member for matrix placement');
+    const processResponse = await fetch(
+      `${supabaseUrl}/functions/v1/process-new-member`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          user_id: newUser.user.id,
+          sponsor_id: sponsorId,
+        }),
+      }
+    );
+
+    if (!processResponse.ok) {
+      const errorText = await processResponse.text();
+      console.error('Failed to process matrix placement:', errorText);
+    } else {
+      console.log('Matrix placement processed successfully');
+    }
+
     console.log('User setup complete:', newUser.user.id);
 
     return new Response(
