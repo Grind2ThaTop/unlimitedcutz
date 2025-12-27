@@ -59,6 +59,54 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          target_id: string | null
+          target_owner_id: string | null
+          target_type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_owner_id?: string | null
+          target_type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_owner_id?: string | null
+          target_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_events_target_owner_id_fkey"
+            columns: ["target_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           id: string
@@ -242,6 +290,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_logs: {
+        Row: {
+          created_at: string
+          email_to: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          resend_id: string | null
+          status: string
+          subject: string
+          template: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email_to: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          resend_id?: string | null
+          status?: string
+          subject: string
+          template: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email_to?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          resend_id?: string | null
+          status?: string
+          subject?: string
+          template?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          group_type: string
+          id: string
+          location: string | null
+          name: string
+          rules: Json | null
+          slug: string
+          tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          group_type: string
+          id?: string
+          location?: string | null
+          name: string
+          rules?: Json | null
+          slug: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          group_type?: string
+          id?: string
+          location?: string | null
+          name?: string
+          rules?: Json | null
+          slug?: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       matrix_nodes: {
         Row: {
@@ -496,6 +630,59 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          admin_alerts: boolean
+          created_at: string
+          daily_digest: boolean
+          digest_time: string
+          email_enabled: boolean
+          id: string
+          notify_on_comments: boolean
+          notify_on_reactions: boolean
+          notify_on_referrals: boolean
+          sms_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_alerts?: boolean
+          created_at?: string
+          daily_digest?: boolean
+          digest_time?: string
+          email_enabled?: boolean
+          id?: string
+          notify_on_comments?: boolean
+          notify_on_reactions?: boolean
+          notify_on_referrals?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_alerts?: boolean
+          created_at?: string
+          daily_digest?: boolean
+          digest_time?: string
+          email_enabled?: boolean
+          id?: string
+          notify_on_comments?: boolean
+          notify_on_reactions?: boolean
+          notify_on_referrals?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -708,6 +895,7 @@ export type Database = {
           email: string
           facebook_url: string | null
           full_name: string | null
+          group_id: string | null
           id: string
           instagram_url: string | null
           paypal_email: string | null
@@ -725,6 +913,7 @@ export type Database = {
           email: string
           facebook_url?: string | null
           full_name?: string | null
+          group_id?: string | null
           id: string
           instagram_url?: string | null
           paypal_email?: string | null
@@ -742,6 +931,7 @@ export type Database = {
           email?: string
           facebook_url?: string | null
           full_name?: string | null
+          group_id?: string | null
           id?: string
           instagram_url?: string | null
           paypal_email?: string | null
@@ -752,6 +942,13 @@ export type Database = {
           x_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_referred_by_fkey"
             columns: ["referred_by"]
