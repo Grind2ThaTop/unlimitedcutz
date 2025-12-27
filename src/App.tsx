@@ -16,7 +16,12 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AdminRanks from "./pages/admin/AdminRanks";
 import AdminMatrixAudit from "./pages/admin/AdminMatrixAudit";
-
+import ClientLogin from "./pages/auth/ClientLogin";
+import ClientSignup from "./pages/auth/ClientSignup";
+import BarberLogin from "./pages/auth/BarberLogin";
+import BarberSignup from "./pages/auth/BarberSignup";
+import AdminLogin from "./pages/auth/AdminLogin";
+import BarberDashboard from "./pages/barber/BarberDashboard";
 const queryClient = new QueryClient();
 
 // Protected route wrapper
@@ -72,12 +77,21 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            {/* Role-specific auth routes */}
+            <Route path="/client/login" element={<ClientLogin />} />
+            <Route path="/client/signup" element={<ClientSignup />} />
+            <Route path="/barber/login" element={<BarberLogin />} />
+            <Route path="/barber/signup" element={<BarberSignup />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            {/* Portal routes */}
             <Route path="/portal" element={<ProtectedRoute><Portal /></ProtectedRoute>} />
             <Route path="/portal/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
             <Route path="/portal/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/portal/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
             <Route path="/portal/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
             <Route path="/portal/store" element={<ProtectedRoute><Store /></ProtectedRoute>} />
+            {/* Barber Routes */}
+            <Route path="/portal/barber" element={<ProtectedRoute><BarberDashboard /></ProtectedRoute>} />
             {/* Admin Routes */}
             <Route path="/portal/admin/ranks" element={<AdminRoute><AdminRanks /></AdminRoute>} />
             <Route path="/portal/admin/matrix-audit" element={<AdminRoute><AdminMatrixAudit /></AdminRoute>} />

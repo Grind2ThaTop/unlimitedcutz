@@ -20,6 +20,8 @@ export interface AccountRole {
   upgraded_at: string | null;
   created_at: string;
   updated_at: string;
+  barber_verified: boolean;
+  sponsor_id: string | null;
 }
 
 export const useAccountRole = () => {
