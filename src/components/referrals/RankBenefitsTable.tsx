@@ -1,10 +1,20 @@
 import { cn } from "@/lib/utils";
 import { useRank } from "@/hooks/useRank";
-import { RANKS, RANK_ORDER, getMatchingBonusDisplay, getPoolsDisplay } from "@/lib/rankConfig";
-import { Check, X } from "lucide-react";
+import { useAccountRole } from "@/hooks/useAccountRole";
+import { 
+  RANKS, 
+  RANK_ORDER, 
+  getMatchingBonusDisplay, 
+  getPoolsDisplay,
+  BARBER_LEVEL_UNLOCKS,
+  CLIENT_LEVEL_UNLOCKS,
+  PLATINUM_BARBER_RATE,
+  BARBER_MATRIX_PERCENT
+} from "@/lib/rankConfig";
 
 const RankBenefitsTable = () => {
   const { currentRankId, isLoading } = useRank();
+  const { isBarber } = useAccountRole();
 
   if (isLoading) {
     return (
@@ -15,12 +25,31 @@ const RankBenefitsTable = () => {
     );
   }
 
+  // Get max level for a rank based on account type
+  const getMaxLevel = (rankId: string) => {
+    if (isBarber) {
+      return BARBER_LEVEL_UNLOCKS[rankId as keyof typeof BARBER_LEVEL_UNLOCKS];
+    }
+    return CLIENT_LEVEL_UNLOCKS[rankId as keyof typeof CLIENT_LEVEL_UNLOCKS];
+  };
+
+  // Get commission rate for a rank
+  const getRate = (rankId: string) => {
+    if (isBarber) {
+      return (rankId === 'platinum' || rankId === 'diamond') ? PLATINUM_BARBER_RATE : BARBER_MATRIX_PERCENT;
+    }
+    return 2.5;
+  };
+
   return (
     <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
       <div className="p-6 border-b border-border/50">
         <h3 className="font-display text-xl">Rank Benefits Overview</h3>
         <p className="text-sm text-muted-foreground">
-          Your rank controls how deep you get paid. Build your downline to unlock more levels.
+          {isBarber 
+            ? 'Your rank controls how deep you get paid. Build your personal team (PAM) to unlock more levels.'
+            : 'Your rank controls how deep you get paid. Build your downline to unlock more levels.'
+          }
         </p>
       </div>
 
@@ -30,6 +59,7 @@ const RankBenefitsTable = () => {
             <tr className="bg-muted/50">
               <th className="py-3 px-4 text-left font-display">Rank</th>
               <th className="py-3 px-4 text-center font-display">Commission Depth</th>
+              <th className="py-3 px-4 text-center font-display">Rate</th>
               <th className="py-3 px-4 text-center font-display">Qualification</th>
               <th className="py-3 px-4 text-center font-display">Matching Bonus</th>
               <th className="py-3 px-4 text-center font-display">Pools</th>
@@ -39,6 +69,8 @@ const RankBenefitsTable = () => {
             {RANK_ORDER.map((rankId) => {
               const rank = RANKS[rankId];
               const isCurrentRank = rankId === currentRankId;
+              const maxLevel = getMaxLevel(rankId);
+              const rate = getRate(rankId);
               
               return (
                 <tr 
@@ -64,11 +96,19 @@ const RankBenefitsTable = () => {
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    <span className="font-mono">Levels 1-{rank.matrixLevels}</span>
+                    <span className="font-mono">Levels 1-{maxLevel}</span>
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <span className={cn(
+                      "font-medium",
+                      isBarber ? "text-primary" : "text-blue-500"
+                    )}>
+                      {rate}%
+                    </span>
                   </td>
                   <td className="py-3 px-4 text-center">
                     <span className="text-xs text-muted-foreground">
-                      {rank.qualificationText}
+                      {isBarber ? rank.barberQualificationText : rank.qualificationText}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-center">
@@ -94,7 +134,10 @@ const RankBenefitsTable = () => {
 
       <div className="p-4 bg-muted/30 border-t border-border/50 space-y-1">
         <p className="text-xs text-muted-foreground text-center">
-          Ranks are earned by building your downline with active members of specific ranks.
+          {isBarber
+            ? 'Ranks are earned by building your Personal Active Matrix (PAM) - your personally enrolled team.'
+            : 'Ranks are earned by building your downline with active members of specific ranks.'
+          }
         </p>
         <p className="text-xs text-muted-foreground text-center">
           If qualification drops, deeper commission levels pause until restored. Matrix placement is never removed.

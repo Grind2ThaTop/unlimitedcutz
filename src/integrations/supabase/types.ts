@@ -332,11 +332,18 @@ export type Database = {
           active_gold_count: number
           active_platinum_count: number
           active_silver_count: number
+          commission_rate: number
           created_at: string
           current_rank: Database["public"]["Enums"]["member_rank"]
           id: string
           is_active: boolean
           last_evaluated_at: string | null
+          max_paid_level: number
+          pam_has_diamond: boolean
+          pam_has_gold: boolean
+          pam_has_platinum: boolean
+          pam_has_silver: boolean
+          personal_active_directs: number
           personally_enrolled_count: number
           rank_qualified_at: string | null
           updated_at: string
@@ -347,11 +354,18 @@ export type Database = {
           active_gold_count?: number
           active_platinum_count?: number
           active_silver_count?: number
+          commission_rate?: number
           created_at?: string
           current_rank?: Database["public"]["Enums"]["member_rank"]
           id?: string
           is_active?: boolean
           last_evaluated_at?: string | null
+          max_paid_level?: number
+          pam_has_diamond?: boolean
+          pam_has_gold?: boolean
+          pam_has_platinum?: boolean
+          pam_has_silver?: boolean
+          personal_active_directs?: number
           personally_enrolled_count?: number
           rank_qualified_at?: string | null
           updated_at?: string
@@ -362,11 +376,18 @@ export type Database = {
           active_gold_count?: number
           active_platinum_count?: number
           active_silver_count?: number
+          commission_rate?: number
           created_at?: string
           current_rank?: Database["public"]["Enums"]["member_rank"]
           id?: string
           is_active?: boolean
           last_evaluated_at?: string | null
+          max_paid_level?: number
+          pam_has_diamond?: boolean
+          pam_has_gold?: boolean
+          pam_has_platinum?: boolean
+          pam_has_silver?: boolean
+          personal_active_directs?: number
           personally_enrolled_count?: number
           rank_qualified_at?: string | null
           updated_at?: string

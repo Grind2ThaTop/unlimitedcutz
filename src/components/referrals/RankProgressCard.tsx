@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils";
 import { useRank } from "@/hooks/useRank";
+import { useAccountRole } from "@/hooks/useAccountRole";
 import RankBadge from "./RankBadge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Lock, ArrowRight, TrendingUp, Zap, Percent, Award, Users } from "lucide-react";
+import { CheckCircle, Lock, ArrowRight, TrendingUp, Zap, Percent, Award, Users, Star } from "lucide-react";
 import { getMatchingBonusDisplay, getPoolsDisplay } from "@/lib/rankConfig";
 
 const RankProgressCard = () => {
@@ -12,8 +13,16 @@ const RankProgressCard = () => {
     isActive, 
     progress,
     maxPayableLevel,
+    commissionRate,
+    personalActiveDirects,
+    pamHasSilver,
+    pamHasGold,
+    pamHasPlatinum,
+    pamHasDiamond,
     isLoading 
   } = useRank();
+  
+  const { isBarber } = useAccountRole();
 
   if (isLoading) {
     return (
@@ -23,6 +32,24 @@ const RankProgressCard = () => {
       </div>
     );
   }
+
+  // Get the PAM status for the next rank
+  const getPamStatusForNextRank = () => {
+    if (!nextRank || !isBarber) return null;
+    
+    const rankToCheck = nextRank.requirements.pamHasRank;
+    if (!rankToCheck) return null;
+    
+    switch (rankToCheck) {
+      case 'silver': return pamHasSilver;
+      case 'gold': return pamHasGold;
+      case 'platinum': return pamHasPlatinum;
+      case 'diamond': return pamHasDiamond;
+      default: return false;
+    }
+  };
+
+  const pamStatus = getPamStatusForNextRank();
 
   return (
     <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
@@ -57,10 +84,10 @@ const RankProgressCard = () => {
           </div>
           <div className="bg-background/50 rounded-lg p-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-              <Zap className="w-3 h-3" />
-              Fast Start
+              <Star className="w-3 h-3" />
+              Commission Rate
             </div>
-            <p className="font-display text-lg text-green-500">Yes</p>
+            <p className="font-display text-lg text-primary">{commissionRate}%</p>
           </div>
           <div className="bg-background/50 rounded-lg p-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -102,16 +129,47 @@ const RankProgressCard = () => {
 
           {/* Requirements Checklist */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              {progress.current >= progress.required ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <Users className="w-4 h-4 text-muted-foreground" />
-              )}
-              <span className={progress.current >= progress.required ? "text-green-500" : ""}>
-                {nextRank.qualificationText}
-              </span>
-            </div>
+            {/* Personal Active Directs requirement (for barbers) */}
+            {isBarber && nextRank.requirements.personalActiveDirects && (
+              <div className="flex items-center gap-2 text-sm">
+                {personalActiveDirects >= nextRank.requirements.personalActiveDirects ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span className={personalActiveDirects >= nextRank.requirements.personalActiveDirects ? "text-green-500" : ""}>
+                  {nextRank.requirements.personalActiveDirects} Personal Active Directs ({personalActiveDirects}/{nextRank.requirements.personalActiveDirects})
+                </span>
+              </div>
+            )}
+
+            {/* PAM Has Rank requirement (for barbers) */}
+            {isBarber && nextRank.requirements.pamHasRank && (
+              <div className="flex items-center gap-2 text-sm">
+                {pamStatus ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span className={pamStatus ? "text-green-500" : ""}>
+                  1 {nextRank.requirements.pamHasRank.toUpperCase()} member in your personal team
+                </span>
+              </div>
+            )}
+
+            {/* Standard qualification text (for clients) */}
+            {!isBarber && (
+              <div className="flex items-center gap-2 text-sm">
+                {progress.current >= progress.required ? (
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span className={progress.current >= progress.required ? "text-green-500" : ""}>
+                  {nextRank.qualificationText}
+                </span>
+              </div>
+            )}
 
             {nextRank.requirements.adminApproval && (
               <div className="flex items-center gap-2 text-sm">
@@ -125,9 +183,9 @@ const RankProgressCard = () => {
           <div className="mt-6 pt-4 border-t border-border/50">
             <p className="text-xs text-muted-foreground mb-2">What you'll unlock:</p>
             <div className="flex flex-wrap gap-2">
-              {nextRank.matrixLevels > currentRank.matrixLevels && (
+              {(isBarber ? nextRank.barberMatrixLevels : nextRank.matrixLevels) > maxPayableLevel && (
                 <span className="text-xs bg-blue-500/10 text-blue-500 px-2 py-1 rounded">
-                  +{nextRank.matrixLevels - currentRank.matrixLevels} Commission Level{nextRank.matrixLevels - currentRank.matrixLevels > 1 ? 's' : ''}
+                  +{(isBarber ? nextRank.barberMatrixLevels : nextRank.matrixLevels) - maxPayableLevel} Commission Level{(isBarber ? nextRank.barberMatrixLevels : nextRank.matrixLevels) - maxPayableLevel > 1 ? 's' : ''}
                 </span>
               )}
               {nextRank.benefits.matchingDepth > currentRank.benefits.matchingDepth && (
@@ -154,7 +212,10 @@ const RankProgressCard = () => {
           <Award className="w-12 h-12 mx-auto text-purple-500 mb-2" />
           <p className="font-display text-lg">You've reached the top!</p>
           <p className="text-sm text-muted-foreground">
-            Full 8-level matrix commissions and 4-level matching unlocked.
+            {isBarber 
+              ? `Full ${maxPayableLevel}-level matrix at ${commissionRate}% and ${currentRank.benefits.matchingDepth}-level matching unlocked.`
+              : 'Full 8-level matrix commissions and 4-level matching unlocked.'
+            }
           </p>
         </div>
       )}

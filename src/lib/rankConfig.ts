@@ -6,7 +6,8 @@ export type AccountType = 'client' | 'barber';
 
 // Matrix Commission Rates (% of $50 membership)
 export const CLIENT_MATRIX_PERCENT = 2.5;  // $1.25 per position
-export const BARBER_MATRIX_PERCENT = 5.0;  // $2.50 per position
+export const BARBER_MATRIX_PERCENT = 5.0;  // $2.50 per position (Bronze-Gold)
+export const PLATINUM_BARBER_RATE = 7.0;   // 7% for Platinum+ barbers
 
 // Platinum+ Barber Override for Levels 5-8
 export const PLATINUM_BARBER_L5_OVERRIDE = 8.0;  // 8% for L5-L8
@@ -19,9 +20,42 @@ export const BARBER_MATCHING = { l1: 20, l2: 10, l3: 10 };  // 20% L1, 10% L2, 1
 export const CLIENT_FAST_START = { level_1: 20, level_2: 10, level_3: 5 };
 export const BARBER_FAST_START = { level_1: 25, level_2: 15, level_3: 10 };
 
-// Get matrix percentage based on account type
-export const getMatrixPercent = (accountType: AccountType): number => {
-  return accountType === 'barber' ? BARBER_MATRIX_PERCENT : CLIENT_MATRIX_PERCENT;
+// BARBER Level Unlocks (different from client/general)
+export const BARBER_LEVEL_UNLOCKS: Record<RankId, number> = {
+  bronze: 4,
+  silver: 5,
+  gold: 6,
+  platinum: 6,
+  diamond: 6,
+};
+
+// CLIENT Level Unlocks
+export const CLIENT_LEVEL_UNLOCKS: Record<RankId, number> = {
+  bronze: 3,
+  silver: 4,
+  gold: 5,
+  platinum: 8,
+  diamond: 8,
+};
+
+// Get matrix percentage based on account type and rank
+export const getMatrixPercent = (accountType: AccountType, rankId?: RankId): number => {
+  if (accountType === 'barber') {
+    // Platinum+ barbers get 7%
+    if (rankId === 'platinum' || rankId === 'diamond') {
+      return PLATINUM_BARBER_RATE;
+    }
+    return BARBER_MATRIX_PERCENT;
+  }
+  return CLIENT_MATRIX_PERCENT;
+};
+
+// Get max level based on account type and rank
+export const getMaxLevelForRank = (accountType: AccountType, rankId: RankId): number => {
+  if (accountType === 'barber') {
+    return BARBER_LEVEL_UNLOCKS[rankId];
+  }
+  return CLIENT_LEVEL_UNLOCKS[rankId];
 };
 
 // Get matching percentages based on account type
@@ -37,13 +71,18 @@ export const getFastStartRates = (accountType: AccountType): { level_1: number; 
 // New rank IDs matching database enum
 export type RankId = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
+// PAM-based rank requirements
 export interface RankRequirements {
-  // New qualification logic based on downline ranks
-  activeBronze?: number;    // Number of active BRONZE members in downline
-  activeSilver?: number;    // Number of active SILVER members in downline
-  activeGold?: number;      // Number of active GOLD members in downline
-  activePlatinum?: number;  // Number of active PLATINUM members in downline
+  // PAM (Personal Active Matrix) based requirements
+  personalActiveDirects?: number;  // Number of personal active directs needed
+  pamHasRank?: RankId;             // Must have this rank somewhere in PAM downline
   adminApproval?: boolean;
+  
+  // Legacy fields for display purposes
+  activeBronze?: number;
+  activeSilver?: number;
+  activeGold?: number;
+  activePlatinum?: number;
 }
 
 export interface RankBenefits {
@@ -60,11 +99,13 @@ export interface RankConfig {
   color: string;
   bgColor: string;
   borderColor: string;
-  matrixLevels: number;
+  matrixLevels: number;  // For display (client default)
+  barberMatrixLevels: number;  // For barber display
   requirements: RankRequirements;
   benefits: RankBenefits;
   description: string;
   qualificationText: string;
+  barberQualificationText: string;  // PAM-based text for barbers
 }
 
 export const RANKS: Record<RankId, RankConfig> = {
@@ -76,10 +117,12 @@ export const RANKS: Record<RankId, RankConfig> = {
     bgColor: 'bg-amber-700/10',
     borderColor: 'border-amber-700/20',
     matrixLevels: 3,
+    barberMatrixLevels: 4,
     requirements: {},  // Just active $50/month membership
     benefits: { fastStart: true, matchingDepth: 0, pools: [] },
     description: 'Entry Level - Active $50/month membership',
     qualificationText: 'Active $50/month membership',
+    barberQualificationText: 'Active $150/month membership',
   },
   silver: {
     id: 'silver',
@@ -89,10 +132,12 @@ export const RANKS: Record<RankId, RankConfig> = {
     bgColor: 'bg-gray-400/10',
     borderColor: 'border-gray-400/20',
     matrixLevels: 4,
-    requirements: { activeBronze: 2 },
+    barberMatrixLevels: 5,
+    requirements: { personalActiveDirects: 2, pamHasRank: 'silver', activeBronze: 2 },
     benefits: { fastStart: true, matchingDepth: 0, pools: [] },
     description: 'First builder unlock',
     qualificationText: '2 active BRONZE members in downline',
+    barberQualificationText: '2 personal active directs + 1 SILVER in your team',
   },
   gold: {
     id: 'gold',
@@ -102,10 +147,12 @@ export const RANKS: Record<RankId, RankConfig> = {
     bgColor: 'bg-yellow-500/10',
     borderColor: 'border-yellow-500/20',
     matrixLevels: 5,
-    requirements: { activeSilver: 2 },
+    barberMatrixLevels: 6,
+    requirements: { personalActiveDirects: 2, pamHasRank: 'gold', activeSilver: 2 },
     benefits: { fastStart: true, matchingDepth: 2, pools: [] },
     description: 'Leadership entry level',
     qualificationText: '2 active SILVER members in downline',
+    barberQualificationText: '2 personal active directs + 1 GOLD in your team',
   },
   platinum: {
     id: 'platinum',
@@ -114,11 +161,13 @@ export const RANKS: Record<RankId, RankConfig> = {
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
-    matrixLevels: 8,  // Platinum unlocks levels 6-8
-    requirements: { activeGold: 3 },
+    matrixLevels: 8,
+    barberMatrixLevels: 6,  // Barbers cap at 6
+    requirements: { personalActiveDirects: 2, pamHasRank: 'platinum', activeGold: 3 },
     benefits: { fastStart: true, matchingDepth: 3, pools: ['diamond'], barberL5Override: true },
     description: 'Builder + Leader',
     qualificationText: '3 active GOLD members in downline',
+    barberQualificationText: '2 personal active directs + 1 PLATINUM in your team',
   },
   diamond: {
     id: 'diamond',
@@ -128,21 +177,23 @@ export const RANKS: Record<RankId, RankConfig> = {
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     matrixLevels: 8,
-    requirements: { activePlatinum: 4 },
+    barberMatrixLevels: 6,  // Barbers cap at 6
+    requirements: { personalActiveDirects: 2, pamHasRank: 'diamond', activePlatinum: 4 },
     benefits: { fastStart: true, matchingDepth: 4, pools: ['diamond', 'crown'], barberL5Override: true },
     description: 'Top-tier leadership',
     qualificationText: '4 active PLATINUM members in downline',
+    barberQualificationText: '2 personal active directs + 1 DIAMOND in your team',
   },
 };
 
 export const RANK_ORDER: RankId[] = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
 
-// Map rank to maximum payable matrix level
+// Map rank to maximum payable matrix level (CLIENT defaults)
 export const RANK_TO_MAX_LEVEL: Record<RankId, number> = {
   bronze: 3,
   silver: 4,
   gold: 5,
-  platinum: 8,  // Platinum unlocks L6-L8
+  platinum: 8,
   diamond: 8,
 };
 
