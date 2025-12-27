@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.admin-create-user]
 verify_jwt = false
+
+[functions.ghl-core]
+verify_jwt = false
+
+[functions.ghl-webhook]
+verify_jwt = false
