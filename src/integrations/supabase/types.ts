@@ -17,33 +17,39 @@ export type Database = {
       account_roles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
+          barber_verified: boolean
           created_at: string
           id: string
           matching_l1_percent: number
           matching_l2_percent: number
           matrix_percent: number
+          sponsor_id: string | null
           updated_at: string
           upgraded_at: string | null
           user_id: string
         }
         Insert: {
           account_type?: Database["public"]["Enums"]["account_type"]
+          barber_verified?: boolean
           created_at?: string
           id?: string
           matching_l1_percent?: number
           matching_l2_percent?: number
           matrix_percent?: number
+          sponsor_id?: string | null
           updated_at?: string
           upgraded_at?: string | null
           user_id: string
         }
         Update: {
           account_type?: Database["public"]["Enums"]["account_type"]
+          barber_verified?: boolean
           created_at?: string
           id?: string
           matching_l1_percent?: number
           matching_l2_percent?: number
           matrix_percent?: number
+          sponsor_id?: string | null
           updated_at?: string
           upgraded_at?: string | null
           user_id?: string
@@ -70,6 +76,83 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      barber_pool: {
+        Row: {
+          created_at: string
+          id: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_contributions: number
+          total_cuts: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_contributions?: number
+          total_cuts?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_contributions?: number
+          total_cuts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      barber_pool_payouts: {
+        Row: {
+          barber_id: string
+          created_at: string
+          cuts_count: number
+          id: string
+          paid_at: string | null
+          payout_amount: number
+          pool_id: string
+          status: string
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string
+          cuts_count?: number
+          id?: string
+          paid_at?: string | null
+          payout_amount?: number
+          pool_id: string
+          status?: string
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string
+          cuts_count?: number
+          id?: string
+          paid_at?: string | null
+          payout_amount?: number
+          pool_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_pool_payouts_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "barber_pool"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commission_events: {
         Row: {
@@ -287,6 +370,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      membership_cuts: {
+        Row: {
+          barber_id: string
+          client_id: string
+          created_at: string
+          cut_date: string
+          id: string
+          is_membership_cut: boolean
+          membership_id: string
+          notes: string | null
+        }
+        Insert: {
+          barber_id: string
+          client_id: string
+          created_at?: string
+          cut_date?: string
+          id?: string
+          is_membership_cut?: boolean
+          membership_id: string
+          notes?: string | null
+        }
+        Update: {
+          barber_id?: string
+          client_id?: string
+          created_at?: string
+          cut_date?: string
+          id?: string
+          is_membership_cut?: boolean
+          membership_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_cuts_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       memberships: {
         Row: {
@@ -699,6 +823,10 @@ export type Database = {
         | "matrix_membership"
         | "product_commission"
         | "matching_bonus"
+        | "enrollment_residual"
+        | "pool_payout"
+        | "fee_charge"
+        | "fee_waiver"
       member_rank:
         | "bronze"
         | "silver"
@@ -844,6 +972,10 @@ export const Constants = {
         "matrix_membership",
         "product_commission",
         "matching_bonus",
+        "enrollment_residual",
+        "pool_payout",
+        "fee_charge",
+        "fee_waiver",
       ],
       member_rank: [
         "bronze",

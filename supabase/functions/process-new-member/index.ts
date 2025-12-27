@@ -27,6 +27,27 @@ interface ValidationChecks {
   integrity_check: boolean;
 }
 
+// Rank requirements for commission depth (CLIENTS ONLY - Barbers get override)
+const RANK_TO_MAX_LEVEL: Record<string, number> = {
+  bronze: 3,
+  silver: 4,
+  gold: 5,
+  platinum: 6,
+  diamond: 8,
+  partner: 8,
+};
+
+// Rank requirements for MATCHING BONUS depth (applies to both Clients and Barbers)
+// GOLD+ required for matching bonuses, with depth gated by rank
+const RANK_TO_MATCHING_DEPTH: Record<string, number> = {
+  bronze: 0,     // No matching bonus
+  silver: 0,     // No matching bonus
+  gold: 2,       // 2 levels of matching
+  platinum: 3,   // 3 levels of matching
+  diamond: 4,    // 4 levels of matching
+  partner: 4,    // 4 levels of matching
+};
+
 // Calculate expected level and seat from position_index (1-based)
 function calculateExpectedPosition(positionIndex: number): { level: number; seatInLevel: number } {
   if (positionIndex === 1) return { level: 1, seatInLevel: 1 };
@@ -76,6 +97,52 @@ async function detectCycle(
   }
   
   return false;
+}
+
+// Get max payable level for a user based on account type and rank
+async function getMaxPayableLevel(
+  supabaseAdmin: any,
+  userId: string
+): Promise<{ maxLevel: number; accountType: string; rank: string; isBarber: boolean; barberVerified: boolean }> {
+  // Get account role to check if barber
+  const { data: accountRole } = await supabaseAdmin
+    .from('account_roles')
+    .select('account_type, barber_verified')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const accountType = accountRole?.account_type || 'client';
+  const barberVerified = accountRole?.barber_verified || false;
+  const isBarber = accountType === 'barber';
+
+  // Get member rank
+  const { data: memberRank } = await supabaseAdmin
+    .from('member_ranks')
+    .select('current_rank, is_active')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const rank = memberRank?.current_rank || 'bronze';
+  const isActive = memberRank?.is_active !== false;
+
+  // BARBER OVERRIDE: Verified barbers get levels 1-8 immediately
+  if (isBarber && barberVerified) {
+    logStep("Barber override applied - Levels 1-8 unlocked", { userId, accountType, barberVerified });
+    return { maxLevel: 8, accountType, rank, isBarber, barberVerified };
+  }
+
+  // CLIENT: Rank-gated depth
+  if (!isActive) {
+    return { maxLevel: 0, accountType, rank, isBarber, barberVerified };
+  }
+
+  const maxLevel = RANK_TO_MAX_LEVEL[rank] || 3;
+  return { maxLevel, accountType, rank, isBarber, barberVerified };
+}
+
+// Get max matching bonus depth based on rank (applies to both clients and barbers)
+function getMaxMatchingDepth(rank: string): number {
+  return RANK_TO_MATCHING_DEPTH[rank] || 0;
 }
 
 serve(async (req) => {
@@ -386,16 +453,9 @@ serve(async (req) => {
       }
     }
 
-    // ========== MATRIX INCOME (Role-based: Client 2.5%, Barber 5%) ==========
-    // Commission depth is now LOCKED by rank
-    const RANK_TO_MAX_LEVEL: Record<string, number> = {
-      bronze: 3,
-      silver: 4,
-      gold: 5,
-      platinum: 6,
-      diamond: 8,
-    };
-
+    // ========== MATRIX INCOME (Role-based with Barber Override) ==========
+    // Barbers (verified): Get Levels 1-8 immediately
+    // Clients: Rank-gated depth (BRONZE=3, SILVER=4, GOLD=5, PLATINUM=6, DIAMOND=8)
     if (parentId) {
       const matrixCommissions: any[] = [];
       let currentParentId = parentId;
@@ -410,25 +470,22 @@ serve(async (req) => {
 
         if (!parentNode) break;
 
-        // Get member rank to check commission depth eligibility
-        const { data: memberRank } = await supabaseAdmin
-          .from('member_ranks')
-          .select('current_rank, is_active')
-          .eq('user_id', parentNode.user_id)
-          .maybeSingle();
+        // Get max payable level for this user (includes barber override)
+        const { maxLevel, accountType, rank, isBarber, barberVerified } = await getMaxPayableLevel(
+          supabaseAdmin, 
+          parentNode.user_id
+        );
 
-        const userRank = memberRank?.current_rank || 'bronze';
-        const isActive = memberRank?.is_active !== false;
-        const maxPayableLevel = RANK_TO_MAX_LEVEL[userRank] || 3;
-
-        // RANK-BASED COMMISSION DEPTH: Only pay if level is within their unlocked depth
-        if (uplineLevel > maxPayableLevel || !isActive) {
-          logStep("Skipping commission - rank/level restriction", { 
+        // Check if this level is within their unlocked depth
+        if (uplineLevel > maxLevel) {
+          logStep("Skipping commission - level exceeds max", { 
             userId: parentNode.user_id, 
-            rank: userRank,
-            maxLevel: maxPayableLevel,
+            rank,
+            accountType,
+            isBarber,
+            barberVerified,
+            maxLevel,
             currentLevel: uplineLevel,
-            isActive
           });
           currentParentId = parentNode.parent_id;
           uplineLevel++;
@@ -452,10 +509,14 @@ serve(async (req) => {
 
           // Default to client rates if no account_role found
           const matrixPercent = accountRole?.matrix_percent || 2.5;
-          const accountType = accountRole?.account_type || 'client';
+          const actualAccountType = accountRole?.account_type || 'client';
           
           // Calculate commission: $50 * matrix_percent / 100
           const commissionAmount = 50 * (matrixPercent / 100);
+
+          const description = isBarber && barberVerified
+            ? `Matrix Level ${uplineLevel} (Barber ${matrixPercent}%, L1-8 unlocked)`
+            : `Matrix Level ${uplineLevel} (${actualAccountType} ${matrixPercent}%, ${rank} rank)`;
 
           matrixCommissions.push({
             user_id: parentNode.user_id,
@@ -463,16 +524,18 @@ serve(async (req) => {
             commission_type: 'matrix_membership',
             level: uplineLevel,
             source_user_id: user_id,
-            description: `Matrix Level ${uplineLevel} (${accountType} ${matrixPercent}%, ${userRank} rank)`,
+            description,
             status: 'pending',
           });
 
           logStep("Matrix commission calculated", { 
             userId: parentNode.user_id, 
-            accountType, 
+            accountType: actualAccountType, 
             matrixPercent, 
             amount: commissionAmount,
-            rank: userRank
+            rank,
+            isBarber,
+            barberVerified
           });
         }
 
@@ -486,7 +549,10 @@ serve(async (req) => {
       }
     }
 
-    // ========== MATCHING BONUSES (10% L1, 5% L2) ==========
+    // ========== MATCHING BONUSES (RANK-GATED: GOLD+ only) ==========
+    // Matching bonus depth is NOW rank-gated for BOTH clients and barbers
+    // GOLD = 2 levels, PLATINUM = 3 levels, DIAMOND = 4 levels
+    // BRONZE/SILVER = 0 levels (no matching bonus)
     const { data: allNewCommissions } = await supabaseAdmin
       .from('commission_events')
       .select('*')
@@ -509,6 +575,27 @@ serve(async (req) => {
           .single();
 
         if (earnerProfile?.referred_by) {
+          // Get L1 sponsor's rank to check matching eligibility
+          const { data: l1MemberRank } = await supabaseAdmin
+            .from('member_ranks')
+            .select('current_rank, is_active')
+            .eq('user_id', earnerProfile.referred_by)
+            .maybeSingle();
+
+          const l1Rank = l1MemberRank?.current_rank || 'bronze';
+          const l1IsActive = l1MemberRank?.is_active !== false;
+          const l1MaxMatchingDepth = getMaxMatchingDepth(l1Rank);
+
+          // Check if L1 sponsor qualifies for matching (GOLD+ required)
+          if (l1MaxMatchingDepth < 1 || !l1IsActive) {
+            logStep("L1 Matching skipped - rank not qualified", { 
+              userId: earnerProfile.referred_by, 
+              rank: l1Rank,
+              maxMatchingDepth: l1MaxMatchingDepth
+            });
+            continue;
+          }
+
           // Get L1 sponsor's account role for matching rates
           const { data: l1AccountRole } = await supabaseAdmin
             .from('account_roles')
@@ -516,7 +603,6 @@ serve(async (req) => {
             .eq('user_id', earnerProfile.referred_by)
             .maybeSingle();
 
-          // Default to client rates (10%/5%) if no account_role found
           const l1MatchPercent = l1AccountRole?.matching_l1_percent || 10;
           const l1AccountType = l1AccountRole?.account_type || 'client';
 
@@ -536,7 +622,7 @@ serve(async (req) => {
                 commission_type: 'matching_bonus',
                 level: 1,
                 source_user_id: earnerId,
-                description: `${l1MatchPercent}% Matching Bonus - Level 1 (${l1AccountType})`,
+                description: `${l1MatchPercent}% Matching Bonus - Level 1 (${l1AccountType}, ${l1Rank} rank)`,
                 status: 'pending',
               });
 
@@ -544,53 +630,77 @@ serve(async (req) => {
                 userId: earnerProfile.referred_by, 
                 accountType: l1AccountType, 
                 matchPercent: l1MatchPercent, 
-                amount: l1Match 
+                amount: l1Match,
+                rank: l1Rank
               });
             }
 
-            const { data: l1Profile } = await supabaseAdmin
-              .from('profiles')
-              .select('referred_by')
-              .eq('id', earnerProfile.referred_by)
-              .single();
+            // Check for L2 matching (only if L1 has depth >= 2)
+            if (l1MaxMatchingDepth >= 2) {
+              const { data: l1Profile } = await supabaseAdmin
+                .from('profiles')
+                .select('referred_by')
+                .eq('id', earnerProfile.referred_by)
+                .single();
 
-            if (l1Profile?.referred_by) {
-              // Get L2 sponsor's account role for matching rates
-              const { data: l2AccountRole } = await supabaseAdmin
-                .from('account_roles')
-                .select('account_type, matching_l2_percent')
-                .eq('user_id', l1Profile.referred_by)
-                .maybeSingle();
+              if (l1Profile?.referred_by) {
+                // Get L2 sponsor's rank to check matching eligibility
+                const { data: l2MemberRank } = await supabaseAdmin
+                  .from('member_ranks')
+                  .select('current_rank, is_active')
+                  .eq('user_id', l1Profile.referred_by)
+                  .maybeSingle();
 
-              // Default to client rates if no account_role found
-              const l2MatchPercent = l2AccountRole?.matching_l2_percent || 5;
-              const l2AccountType = l2AccountRole?.account_type || 'client';
+                const l2Rank = l2MemberRank?.current_rank || 'bronze';
+                const l2IsActive = l2MemberRank?.is_active !== false;
+                const l2MaxMatchingDepth = getMaxMatchingDepth(l2Rank);
 
-              const { data: l2Membership } = await supabaseAdmin
-                .from('memberships')
-                .select('status')
-                .eq('user_id', l1Profile.referred_by)
-                .eq('status', 'active')
-                .maybeSingle();
+                // Check if L2 sponsor qualifies for matching (needs >= 2 levels)
+                if (l2MaxMatchingDepth >= 2 && l2IsActive) {
+                  // Get L2 sponsor's account role for matching rates
+                  const { data: l2AccountRole } = await supabaseAdmin
+                    .from('account_roles')
+                    .select('account_type, matching_l2_percent')
+                    .eq('user_id', l1Profile.referred_by)
+                    .maybeSingle();
 
-              if (l2Membership) {
-                const l2Match = (totalEarned as number) * (l2MatchPercent / 100);
-                if (l2Match > 0) {
-                  matchingCommissions.push({
-                    user_id: l1Profile.referred_by,
-                    amount: l2Match,
-                    commission_type: 'matching_bonus',
-                    level: 2,
-                    source_user_id: earnerId,
-                    description: `${l2MatchPercent}% Matching Bonus - Level 2 (${l2AccountType})`,
-                    status: 'pending',
-                  });
+                  const l2MatchPercent = l2AccountRole?.matching_l2_percent || 5;
+                  const l2AccountType = l2AccountRole?.account_type || 'client';
 
-                  logStep("L2 Matching calculated", { 
+                  const { data: l2Membership } = await supabaseAdmin
+                    .from('memberships')
+                    .select('status')
+                    .eq('user_id', l1Profile.referred_by)
+                    .eq('status', 'active')
+                    .maybeSingle();
+
+                  if (l2Membership) {
+                    const l2Match = (totalEarned as number) * (l2MatchPercent / 100);
+                    if (l2Match > 0) {
+                      matchingCommissions.push({
+                        user_id: l1Profile.referred_by,
+                        amount: l2Match,
+                        commission_type: 'matching_bonus',
+                        level: 2,
+                        source_user_id: earnerId,
+                        description: `${l2MatchPercent}% Matching Bonus - Level 2 (${l2AccountType}, ${l2Rank} rank)`,
+                        status: 'pending',
+                      });
+
+                      logStep("L2 Matching calculated", { 
+                        userId: l1Profile.referred_by, 
+                        accountType: l2AccountType, 
+                        matchPercent: l2MatchPercent, 
+                        amount: l2Match,
+                        rank: l2Rank
+                      });
+                    }
+                  }
+                } else {
+                  logStep("L2 Matching skipped - rank not qualified", { 
                     userId: l1Profile.referred_by, 
-                    accountType: l2AccountType, 
-                    matchPercent: l2MatchPercent, 
-                    amount: l2Match 
+                    rank: l2Rank,
+                    maxMatchingDepth: l2MaxMatchingDepth
                   });
                 }
               }
