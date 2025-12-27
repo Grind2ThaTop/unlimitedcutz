@@ -11,6 +11,7 @@ interface UserWithRank {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
+  referral_code: string | null;
   created_at: string;
   member_rank: {
     id: string;
@@ -61,7 +62,7 @@ export const useAdmin = () => {
       // First get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, avatar_url, created_at')
+        .select('id, email, full_name, avatar_url, referral_code, created_at')
         .order('created_at', { ascending: false });
       
       if (profilesError) throw profilesError;
