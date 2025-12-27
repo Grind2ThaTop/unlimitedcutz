@@ -24,9 +24,9 @@ export const BARBER_FAST_START = { level_1: 25, level_2: 15, level_3: 10 };
 export const BARBER_LEVEL_UNLOCKS: Record<RankId, number> = {
   bronze: 4,
   silver: 5,
-  gold: 6,
-  platinum: 6,
-  diamond: 6,
+  gold: 8,      // Gold+ gets all 8 levels
+  platinum: 8,
+  diamond: 8,
 };
 
 // CLIENT Level Unlocks
@@ -147,7 +147,7 @@ export const RANKS: Record<RankId, RankConfig> = {
     bgColor: 'bg-yellow-500/10',
     borderColor: 'border-yellow-500/20',
     matrixLevels: 5,
-    barberMatrixLevels: 6,
+    barberMatrixLevels: 8,  // Gold+ barbers get all 8
     requirements: { personalActiveDirects: 2, pamHasRank: 'gold', activeSilver: 2 },
     benefits: { fastStart: true, matchingDepth: 2, pools: [] },
     description: 'Leadership entry level',
@@ -162,7 +162,7 @@ export const RANKS: Record<RankId, RankConfig> = {
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
     matrixLevels: 8,
-    barberMatrixLevels: 6,  // Barbers cap at 6
+    barberMatrixLevels: 8,
     requirements: { personalActiveDirects: 2, pamHasRank: 'platinum', activeGold: 3 },
     benefits: { fastStart: true, matchingDepth: 3, pools: ['diamond'], barberL5Override: true },
     description: 'Builder + Leader',
@@ -177,7 +177,7 @@ export const RANKS: Record<RankId, RankConfig> = {
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/20',
     matrixLevels: 8,
-    barberMatrixLevels: 6,  // Barbers cap at 6
+    barberMatrixLevels: 8,
     requirements: { personalActiveDirects: 2, pamHasRank: 'diamond', activePlatinum: 4 },
     benefits: { fastStart: true, matchingDepth: 4, pools: ['diamond', 'crown'], barberL5Override: true },
     description: 'Top-tier leadership',
