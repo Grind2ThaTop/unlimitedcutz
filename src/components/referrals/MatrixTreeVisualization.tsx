@@ -371,22 +371,59 @@ const MatrixTreeVisualization = () => {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 mb-6 text-xs">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-primary" />
-          <span>You</span>
+      <div className="space-y-3 mb-6">
+        {/* Status Legend */}
+        <div className="flex flex-wrap gap-4 text-xs">
+          <span className="text-muted-foreground font-medium">Status:</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-primary" />
+            <span>You</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-green-500/50 border border-green-500" />
+            <span>Filled</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-amber-500/50 border border-amber-500" />
+            <span>Inactive</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full border border-dashed border-muted-foreground/50" />
+            <span>Open</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-full bg-purple-500/50 border border-purple-500" />
+            <span>Barber</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-green-500/50 border border-green-500" />
-          <span>Filled</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full bg-amber-500/50 border border-amber-500" />
-          <span>Inactive</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-4 rounded-full border border-dashed border-muted-foreground/50" />
-          <span>Open</span>
+        
+        {/* Rank Legend */}
+        <div className="flex flex-wrap gap-4 text-xs">
+          <span className="text-muted-foreground font-medium">Ranks:</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-sm bg-amber-700/50 border border-amber-700" />
+            <span>Bronze</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-sm bg-slate-400/50 border border-slate-400" />
+            <span>Silver</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-sm bg-yellow-500/50 border border-yellow-500" />
+            <span>Gold</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-sm bg-cyan-400/50 border border-cyan-400" />
+            <span>Platinum</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-sm bg-blue-500/50 border border-blue-500" />
+            <span>Diamond</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded-sm bg-gradient-to-r from-purple-500 to-pink-500" />
+            <span>Partner</span>
+          </div>
         </div>
       </div>
 
