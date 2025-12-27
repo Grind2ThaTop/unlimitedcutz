@@ -26,46 +26,48 @@ interface MatrixNodeData {
   } | null;
 }
 
-interface DisplayNode {
+interface TreeNodeData {
   id: string;
-  level: number;
-  position: number;
   status: 'filled' | 'open' | 'root';
   name?: string;
   email?: string;
+  level: number;
   positionIndex?: number;
+  left: TreeNodeData | null;
+  middle: TreeNodeData | null;
+  right: TreeNodeData | null;
 }
 
-const NodeIcon = ({ status }: { status: DisplayNode['status'] }) => {
+const NodeIcon = ({ status }: { status: TreeNodeData['status'] }) => {
   switch (status) {
     case 'root':
-      return <Users className="w-4 h-4" />;
+      return <Users className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'filled':
-      return <UserCheck className="w-4 h-4" />;
+      return <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'open':
-      return <User className="w-4 h-4 opacity-40" />;
+      return <User className="w-3 h-3 sm:w-4 sm:h-4 opacity-40" />;
   }
 };
 
-const TreeNode = ({ node }: { node: DisplayNode }) => {
-  const statusStyles = {
-    root: 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background',
-    filled: 'bg-green-500/20 text-green-500 border border-green-500/50',
-    open: 'bg-muted/50 text-muted-foreground border border-dashed border-muted-foreground/30',
-  };
+const statusStyles = {
+  root: 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background',
+  filled: 'bg-green-500/20 text-green-500 border border-green-500/50',
+  open: 'bg-muted/50 text-muted-foreground border border-dashed border-muted-foreground/30',
+};
 
-  const statusLabels = {
-    root: 'Root Node',
-    filled: 'Active Member',
-    open: 'Open Position',
-  };
+const statusLabels = {
+  root: 'Root Node',
+  filled: 'Active Member',
+  open: 'Open Position',
+};
 
+const NodePopover = ({ node }: { node: TreeNodeData }) => {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 cursor-pointer",
+            "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 cursor-pointer flex-shrink-0",
             statusStyles[node.status]
           )}
         >
@@ -76,7 +78,7 @@ const TreeNode = ({ node }: { node: DisplayNode }) => {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center",
+              "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
               statusStyles[node.status]
             )}>
               <NodeIcon status={node.status} />
@@ -94,10 +96,6 @@ const TreeNode = ({ node }: { node: DisplayNode }) => {
               <span className="text-muted-foreground">Level:</span>
               <span>{node.level}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Position:</span>
-              <span>{node.position}</span>
-            </div>
             {node.positionIndex && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Global Index:</span>
@@ -111,6 +109,75 @@ const TreeNode = ({ node }: { node: DisplayNode }) => {
   );
 };
 
+// Recursive tree branch component - each parent has its 3 children directly beneath
+const TreeBranch = ({ node, maxDepth, currentDepth = 0 }: { 
+  node: TreeNodeData; 
+  maxDepth: number;
+  currentDepth?: number;
+}) => {
+  const hasChildren = node.left || node.middle || node.right;
+  const showChildren = currentDepth < maxDepth - 1;
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* Node */}
+      <NodePopover node={node} />
+      
+      {/* Children - only render if we haven't reached max depth */}
+      {showChildren && (
+        <>
+          {/* Connecting lines */}
+          <div className="flex items-start justify-center w-full mt-1">
+            <svg 
+              className="h-6 w-full overflow-visible" 
+              style={{ minWidth: '100px' }}
+              preserveAspectRatio="none"
+            >
+              {/* Lines to children */}
+              <line x1="50%" y1="0" x2="20%" y2="100%" stroke="hsl(var(--border))" strokeWidth="1.5" />
+              <line x1="50%" y1="0" x2="50%" y2="100%" stroke="hsl(var(--border))" strokeWidth="1.5" />
+              <line x1="50%" y1="0" x2="80%" y2="100%" stroke="hsl(var(--border))" strokeWidth="1.5" />
+            </svg>
+          </div>
+          
+          {/* Children row */}
+          <div className="flex items-start justify-center gap-1 sm:gap-2">
+            {/* Left child */}
+            <TreeBranch 
+              node={node.left || createOpenNode(node.level + 1, 'left', node.id)} 
+              maxDepth={maxDepth}
+              currentDepth={currentDepth + 1}
+            />
+            {/* Middle child */}
+            <TreeBranch 
+              node={node.middle || createOpenNode(node.level + 1, 'middle', node.id)} 
+              maxDepth={maxDepth}
+              currentDepth={currentDepth + 1}
+            />
+            {/* Right child */}
+            <TreeBranch 
+              node={node.right || createOpenNode(node.level + 1, 'right', node.id)} 
+              maxDepth={maxDepth}
+              currentDepth={currentDepth + 1}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Create an open placeholder node
+const createOpenNode = (level: number, position: string, parentId: string): TreeNodeData => ({
+  id: `open-${parentId}-${position}`,
+  status: 'open',
+  level,
+  left: null,
+  middle: null,
+  right: null,
+});
+
+// Get display name from profile
 const getDisplayName = (node: MatrixNodeData): string => {
   if (node.profiles?.full_name) {
     return node.profiles.full_name;
@@ -121,138 +188,80 @@ const getDisplayName = (node: MatrixNodeData): string => {
   return `Member`;
 };
 
-// Build full site-wide tree from root
-const buildFullTree = (nodes: MatrixNodeData[], maxLevels: number = 4): DisplayNode[][] => {
-  if (nodes.length === 0) {
-    return generateEmptyTree(maxLevels);
-  }
+// Build hierarchical tree structure from flat node array
+const buildHierarchicalTree = (nodes: MatrixNodeData[]): TreeNodeData | null => {
+  if (nodes.length === 0) return null;
 
   // Find root node (level 1, no parent)
   const rootNode = nodes.find(n => n.level === 1 && !n.parent_id);
-  if (!rootNode) {
-    return generateEmptyTree(maxLevels);
-  }
+  if (!rootNode) return null;
 
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
-  const levels: DisplayNode[][] = [];
 
-  // Level 0 - Root
-  levels.push([{
-    id: rootNode.id,
-    level: 0,
-    position: 1,
-    status: 'root',
-    name: getDisplayName(rootNode),
-    email: rootNode.profiles?.email,
-    positionIndex: rootNode.position_index || undefined,
-  }]);
+  // Recursive function to build tree
+  const buildNode = (matrixNode: MatrixNodeData, isRoot: boolean = false): TreeNodeData => {
+    const leftChildData = matrixNode.left_child ? nodeMap.get(matrixNode.left_child) : null;
+    const middleChildData = matrixNode.middle_child ? nodeMap.get(matrixNode.middle_child) : null;
+    const rightChildData = matrixNode.right_child ? nodeMap.get(matrixNode.right_child) : null;
 
-  // Build subsequent levels using BFS
-  let currentLevelNodes: (MatrixNodeData | null)[] = [rootNode];
-  let levelNum = 1;
+    return {
+      id: matrixNode.id,
+      status: isRoot ? 'root' : 'filled',
+      name: getDisplayName(matrixNode),
+      email: matrixNode.profiles?.email,
+      level: matrixNode.level,
+      positionIndex: matrixNode.position_index || undefined,
+      left: leftChildData ? buildNode(leftChildData) : null,
+      middle: middleChildData ? buildNode(middleChildData) : null,
+      right: rightChildData ? buildNode(rightChildData) : null,
+    };
+  };
 
-  while (levelNum < maxLevels) {
-    const nextLevel: DisplayNode[] = [];
-    const nextLevelNodes: (MatrixNodeData | null)[] = [];
-    let position = 1;
-
-    for (const parentNode of currentLevelNodes) {
-      // Left child
-      const leftChild = parentNode?.left_child ? nodeMap.get(parentNode.left_child) : null;
-      if (leftChild) {
-        nextLevel.push({
-          id: leftChild.id,
-          level: levelNum,
-          position: position,
-          status: 'filled',
-          name: getDisplayName(leftChild),
-          email: leftChild.profiles?.email,
-          positionIndex: leftChild.position_index || undefined,
-        });
-        nextLevelNodes.push(leftChild);
-      } else {
-        nextLevel.push({
-          id: `open-${levelNum}-${position}`,
-          level: levelNum,
-          position: position,
-          status: 'open',
-        });
-        nextLevelNodes.push(null);
-      }
-      position++;
-
-      // Middle child
-      const middleChild = parentNode?.middle_child ? nodeMap.get(parentNode.middle_child) : null;
-      if (middleChild) {
-        nextLevel.push({
-          id: middleChild.id,
-          level: levelNum,
-          position: position,
-          status: 'filled',
-          name: getDisplayName(middleChild),
-          email: middleChild.profiles?.email,
-          positionIndex: middleChild.position_index || undefined,
-        });
-        nextLevelNodes.push(middleChild);
-      } else {
-        nextLevel.push({
-          id: `open-${levelNum}-${position}`,
-          level: levelNum,
-          position: position,
-          status: 'open',
-        });
-        nextLevelNodes.push(null);
-      }
-      position++;
-
-      // Right child
-      const rightChild = parentNode?.right_child ? nodeMap.get(parentNode.right_child) : null;
-      if (rightChild) {
-        nextLevel.push({
-          id: rightChild.id,
-          level: levelNum,
-          position: position,
-          status: 'filled',
-          name: getDisplayName(rightChild),
-          email: rightChild.profiles?.email,
-          positionIndex: rightChild.position_index || undefined,
-        });
-        nextLevelNodes.push(rightChild);
-      } else {
-        nextLevel.push({
-          id: `open-${levelNum}-${position}`,
-          level: levelNum,
-          position: position,
-          status: 'open',
-        });
-        nextLevelNodes.push(null);
-      }
-      position++;
-    }
-
-    levels.push(nextLevel);
-    currentLevelNodes = nextLevelNodes;
-    levelNum++;
-  }
-
-  return levels;
+  return buildNode(rootNode, true);
 };
 
-const generateEmptyTree = (maxLevels: number = 4): DisplayNode[][] => {
-  const levels: DisplayNode[][] = [];
+// Create empty root for when there's no data
+const createEmptyRoot = (): TreeNodeData => ({
+  id: 'root',
+  status: 'open',
+  name: 'Root (Empty)',
+  level: 1,
+  left: null,
+  middle: null,
+  right: null,
+});
 
-  levels.push([{ id: 'root', level: 0, position: 1, status: 'open' }]);
-
-  for (let level = 1; level < maxLevels; level++) {
-    const positions = Math.pow(3, level);
-    const levelNodes: DisplayNode[] = [];
-    for (let p = 1; p <= positions; p++) {
-      levelNodes.push({ id: `l${level}-${p}`, level, position: p, status: 'open' });
+// Count filled and open positions
+const countNodes = (node: TreeNodeData | null, maxDepth: number, currentDepth: number = 0): { filled: number; open: number } => {
+  if (currentDepth >= maxDepth) return { filled: 0, open: 0 };
+  
+  if (!node) {
+    // This node is open, count its theoretical children
+    const childCounts = currentDepth < maxDepth - 1 ? 3 : 0;
+    let totalOpen = 1;
+    if (currentDepth < maxDepth - 1) {
+      for (let i = 0; i < 3; i++) {
+        const childResult = countNodes(null, maxDepth, currentDepth + 1);
+        totalOpen += childResult.open;
+      }
     }
-    levels.push(levelNodes);
+    return { filled: 0, open: totalOpen };
   }
 
-  return levels;
+  const isFilled = node.status === 'filled' || node.status === 'root';
+  let filled = isFilled ? 1 : 0;
+  let open = !isFilled ? 1 : 0;
+
+  if (currentDepth < maxDepth - 1) {
+    const leftResult = countNodes(node.left, maxDepth, currentDepth + 1);
+    const middleResult = countNodes(node.middle, maxDepth, currentDepth + 1);
+    const rightResult = countNodes(node.right, maxDepth, currentDepth + 1);
+
+    filled += leftResult.filled + middleResult.filled + rightResult.filled;
+    open += leftResult.open + middleResult.open + rightResult.open;
+  }
+
+  return { filled, open };
 };
 
 const AdminMatrixTree = () => {
@@ -289,11 +298,12 @@ const AdminMatrixTree = () => {
     },
   });
 
-  const treeData = matrixNodes ? buildFullTree(matrixNodes, showLevels) : generateEmptyTree(showLevels);
+  const treeRoot = matrixNodes && matrixNodes.length > 0 
+    ? buildHierarchicalTree(matrixNodes) 
+    : createEmptyRoot();
 
-  const filledCount = treeData.flat().filter(n => n.status === 'filled' || n.status === 'root').length;
-  const openCount = treeData.flat().filter(n => n.status === 'open').length;
-  const totalPositions = treeData.flat().length;
+  const counts = treeRoot ? countNodes(treeRoot, showLevels) : { filled: 0, open: 1 };
+  const totalPositions = counts.filled + counts.open;
 
   return (
     <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-6">
@@ -305,7 +315,7 @@ const AdminMatrixTree = () => {
           <div>
             <h3 className="font-display text-lg">Site-Wide Matrix</h3>
             <p className="text-xs text-muted-foreground">
-              Full 3×8 structure (showing {showLevels} levels)
+              3×8 Structure — Each person has 3 children
             </p>
           </div>
         </div>
@@ -340,6 +350,12 @@ const AdminMatrixTree = () => {
         </div>
       </div>
 
+      {/* Info Box */}
+      <div className="bg-background/50 rounded-lg p-3 mb-4 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground mb-1">Forced 3×8 Matrix</p>
+        <p>Each person gets exactly 3 child slots. System fills top-down, left-to-right (BFS). Growth happens by replication downward.</p>
+      </div>
+
       {/* Legend */}
       <div className="flex flex-wrap gap-4 mb-6 text-xs">
         <div className="flex items-center gap-1.5">
@@ -360,39 +376,22 @@ const AdminMatrixTree = () => {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
-      ) : expanded && (
-        <div className="space-y-4 overflow-x-auto pb-4">
-          {treeData.map((level, levelIndex) => (
-            <div key={levelIndex} className="flex flex-col items-center">
-              <span className="text-xs text-muted-foreground mb-2">
-                {levelIndex === 0 ? 'Root' : `Level ${levelIndex} (${level.filter(n => n.status !== 'open').length}/${level.length} filled)`}
-              </span>
-
-              <div
-                className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap"
-                style={{ maxWidth: '100%' }}
-              >
-                {level.map((node) => (
-                  <TreeNode key={node.id} node={node} />
-                ))}
-              </div>
-
-              {levelIndex < treeData.length - 1 && (
-                <div className="w-0.5 h-4 bg-border my-1" />
-              )}
-            </div>
-          ))}
+      ) : expanded && treeRoot && (
+        <div className="overflow-x-auto pb-4">
+          <div className="min-w-fit flex justify-center">
+            <TreeBranch node={treeRoot} maxDepth={showLevels} />
+          </div>
         </div>
       )}
 
       {/* Stats summary */}
       <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-border/50">
         <div className="text-center">
-          <p className="text-2xl font-display text-green-500">{filledCount}</p>
+          <p className="text-2xl font-display text-green-500">{counts.filled}</p>
           <p className="text-xs text-muted-foreground">Filled</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-display text-muted-foreground">{openCount}</p>
+          <p className="text-2xl font-display text-muted-foreground">{counts.open}</p>
           <p className="text-xs text-muted-foreground">Open</p>
         </div>
         <div className="text-center">
