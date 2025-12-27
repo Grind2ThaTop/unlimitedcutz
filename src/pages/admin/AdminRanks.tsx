@@ -7,6 +7,7 @@ import UserRankTable from '@/components/admin/UserRankTable';
 import RankAssignmentDialog from '@/components/admin/RankAssignmentDialog';
 import UserRankHistoryDialog from '@/components/admin/UserRankHistoryDialog';
 import AddUserDialog from '@/components/admin/AddUserDialog';
+import AdminMatrixTree from '@/components/admin/AdminMatrixTree';
 import { useAdmin } from '@/hooks/useAdmin';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -157,6 +158,9 @@ const AdminRanks = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Site-Wide Matrix */}
+        <AdminMatrixTree />
 
         {/* User Table */}
         <Card>
