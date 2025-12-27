@@ -20,8 +20,10 @@ import MatrixCalculator from "@/components/referrals/MatrixCalculator";
 import FastStartChart from "@/components/referrals/FastStartChart";
 import MatchingBonusChart from "@/components/referrals/MatchingBonusChart";
 import MatrixTreeVisualization from "@/components/referrals/MatrixTreeVisualization";
+import PersonalTreeVisualization from "@/components/referrals/PersonalTreeVisualization";
 import RankProgressCard from "@/components/referrals/RankProgressCard";
 import RankBenefitsTable from "@/components/referrals/RankBenefitsTable";
+import BarberQualificationDebug from "@/components/referrals/BarberQualificationDebug";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,6 +54,7 @@ const Referrals = () => {
     referrals: true,
     history: true,
   });
+  const [treeView, setTreeView] = useState<'global' | 'personal'>('personal');
   const [openExplainers, setOpenExplainers] = useState({
     fastStart: false,
     matrixIncome: false,
@@ -341,8 +344,40 @@ const Referrals = () => {
                   <MatchingBonusChart />
                 </div>
                 
-                {/* Matrix Tree */}
-                <MatrixTreeVisualization />
+                {/* Tree Toggle */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+                    <Button
+                      variant={treeView === 'personal' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setTreeView('personal')}
+                      className="text-xs"
+                    >
+                      Personal Tree
+                    </Button>
+                    <Button
+                      variant={treeView === 'global' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setTreeView('global')}
+                      className="text-xs"
+                    >
+                      Global Tree
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {treeView === 'personal' 
+                      ? '📍 Personal Tree = Referral line used for rank advancement'
+                      : '🌐 Global Tree = System spillover placements (for matrix payouts)'}
+                  </p>
+                </div>
+
+                {/* Tree Visualization based on toggle */}
+                {treeView === 'personal' ? <PersonalTreeVisualization /> : <MatrixTreeVisualization />}
+                
+                {/* Debug Panel */}
+                <div className="mt-6">
+                  <BarberQualificationDebug />
+                </div>
               </div>
             </CollapsibleContent>
           </div>

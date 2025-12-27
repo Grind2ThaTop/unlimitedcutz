@@ -23,11 +23,16 @@ interface MemberRank {
   last_evaluated_at: string | null;
   is_active: boolean;
   personally_enrolled_count: number;
+  // Personal Downline counts (for rank qualification - 2-of-previous-rank rule)
+  personal_downline_bronze_count: number;
+  personal_downline_silver_count: number;
+  personal_downline_gold_count: number;
+  personal_downline_platinum_count: number;
+  // Legacy fields (kept for backward compat)
   active_bronze_count: number;
   active_silver_count: number;
   active_gold_count: number;
   active_platinum_count: number;
-  // PAM-specific fields
   personal_active_directs: number;
   pam_has_silver: boolean;
   pam_has_gold: boolean;
@@ -88,20 +93,20 @@ export const useRank = () => {
   const nextRank = getNextRank(currentRankId);
   const isActive = memberRank?.is_active ?? true;
 
-  // PAM data from DB
-  const personalActiveDirects = memberRank?.personal_active_directs ?? 0;
-  const pamHasSilver = memberRank?.pam_has_silver ?? false;
-  const pamHasGold = memberRank?.pam_has_gold ?? false;
-  const pamHasPlatinum = memberRank?.pam_has_platinum ?? false;
-  const pamHasDiamond = memberRank?.pam_has_diamond ?? false;
+  // Personal Downline counts (for rank qualification)
+  const personalDownlineBronze = memberRank?.personal_downline_bronze_count ?? 0;
+  const personalDownlineSilver = memberRank?.personal_downline_silver_count ?? 0;
+  const personalDownlineGold = memberRank?.personal_downline_gold_count ?? 0;
+  const personalDownlinePlatinum = memberRank?.personal_downline_platinum_count ?? 0;
 
-  // Legacy downline counts (kept for backwards compat)
+  // Legacy fields (kept for backward compat)
+  const personalActiveDirects = memberRank?.personal_active_directs ?? 0;
   const activeBronzeCount = memberRank?.active_bronze_count || 0;
   const activeSilverCount = memberRank?.active_silver_count || 0;
   const activeGoldCount = memberRank?.active_gold_count || 0;
   const activePlatinumCount = memberRank?.active_platinum_count || 0;
 
-  // Calculate progress to next rank based on PAM requirements for barbers
+  // Calculate progress to next rank based on 2-of-previous-rank rule
   const calculateProgress = (): { current: number; required: number; percentage: number; label: string } => {
     if (!nextRank) {
       return { current: 0, required: 0, percentage: 100, label: 'Max rank reached' };
@@ -109,52 +114,47 @@ export const useRank = () => {
 
     const reqs = nextRank.requirements;
     
-    if (isBarber && reqs.personalActiveDirects) {
-      // For barbers, show personal active directs progress
-      const current = Math.min(personalActiveDirects, reqs.personalActiveDirects);
+    // Silver requires 2 Bronze in Personal Downline
+    if (reqs.personalDownlineBronze) {
+      const current = Math.min(personalDownlineBronze, reqs.personalDownlineBronze);
       return { 
         current, 
-        required: reqs.personalActiveDirects, 
-        percentage: Math.round((current / reqs.personalActiveDirects) * 100),
-        label: 'Personal Active Directs'
+        required: reqs.personalDownlineBronze, 
+        percentage: Math.round((current / reqs.personalDownlineBronze) * 100),
+        label: 'Bronze in Personal Downline'
       };
     }
-
-    // For clients, use the legacy downline counts
-    if (reqs.activePlatinum) {
-      const current = Math.min(activePlatinumCount, reqs.activePlatinum);
+    
+    // Gold requires 2 Silver in Personal Downline
+    if (reqs.personalDownlineSilver) {
+      const current = Math.min(personalDownlineSilver, reqs.personalDownlineSilver);
       return { 
         current, 
-        required: reqs.activePlatinum, 
-        percentage: Math.round((current / reqs.activePlatinum) * 100),
-        label: 'Active PLATINUM members'
+        required: reqs.personalDownlineSilver, 
+        percentage: Math.round((current / reqs.personalDownlineSilver) * 100),
+        label: 'Silver in Personal Downline'
       };
     }
-    if (reqs.activeGold) {
-      const current = Math.min(activeGoldCount, reqs.activeGold);
+    
+    // Platinum requires 2 Gold in Personal Downline
+    if (reqs.personalDownlineGold) {
+      const current = Math.min(personalDownlineGold, reqs.personalDownlineGold);
       return { 
         current, 
-        required: reqs.activeGold, 
-        percentage: Math.round((current / reqs.activeGold) * 100),
-        label: 'Active GOLD members'
+        required: reqs.personalDownlineGold, 
+        percentage: Math.round((current / reqs.personalDownlineGold) * 100),
+        label: 'Gold in Personal Downline'
       };
     }
-    if (reqs.activeSilver) {
-      const current = Math.min(activeSilverCount, reqs.activeSilver);
+    
+    // Diamond requires 2 Platinum in Personal Downline
+    if (reqs.personalDownlinePlatinum) {
+      const current = Math.min(personalDownlinePlatinum, reqs.personalDownlinePlatinum);
       return { 
         current, 
-        required: reqs.activeSilver, 
-        percentage: Math.round((current / reqs.activeSilver) * 100),
-        label: 'Active SILVER members'
-      };
-    }
-    if (reqs.activeBronze) {
-      const current = Math.min(activeBronzeCount, reqs.activeBronze);
-      return { 
-        current, 
-        required: reqs.activeBronze, 
-        percentage: Math.round((current / reqs.activeBronze) * 100),
-        label: 'Active BRONZE members'
+        required: reqs.personalDownlinePlatinum, 
+        percentage: Math.round((current / reqs.personalDownlinePlatinum) * 100),
+        label: 'Platinum in Personal Downline'
       };
     }
 
@@ -181,13 +181,13 @@ export const useRank = () => {
     currentRankId,
     nextRank,
     isActive,
-    // PAM data
+    // Personal Downline counts (for rank qualification)
+    personalDownlineBronze,
+    personalDownlineSilver,
+    personalDownlineGold,
+    personalDownlinePlatinum,
+    // Legacy data (kept for compat)
     personalActiveDirects,
-    pamHasSilver,
-    pamHasGold,
-    pamHasPlatinum,
-    pamHasDiamond,
-    // Legacy counts
     activeBronzeCount,
     activeSilverCount,
     activeGoldCount,

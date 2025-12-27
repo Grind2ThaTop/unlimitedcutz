@@ -71,18 +71,15 @@ export const getFastStartRates = (accountType: AccountType): { level_1: number; 
 // New rank IDs matching database enum
 export type RankId = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
-// PAM-based rank requirements
+// Personal Downline-based rank requirements (2-of-previous-rank rule)
 export interface RankRequirements {
-  // PAM (Personal Active Matrix) based requirements
-  personalActiveDirects?: number;  // Number of personal active directs needed
-  pamHasRank?: RankId;             // Must have this rank somewhere in PAM downline
+  // Personal Downline requirements - NOT global matrix
+  // Count of [previous_rank] members in personal referral tree
+  personalDownlineBronze?: number;   // For Silver: need 2 Bronze
+  personalDownlineSilver?: number;   // For Gold: need 2 Silver
+  personalDownlineGold?: number;     // For Platinum: need 2 Gold
+  personalDownlinePlatinum?: number; // For Diamond: need 2 Platinum
   adminApproval?: boolean;
-  
-  // Legacy fields for display purposes
-  activeBronze?: number;
-  activeSilver?: number;
-  activeGold?: number;
-  activePlatinum?: number;
 }
 
 export interface RankBenefits {
@@ -118,9 +115,9 @@ export const RANKS: Record<RankId, RankConfig> = {
     borderColor: 'border-amber-700/20',
     matrixLevels: 3,
     barberMatrixLevels: 4,
-    requirements: {},  // Just active $50/month membership
+    requirements: {},  // Just active membership
     benefits: { fastStart: true, matchingDepth: 0, pools: [] },
-    description: 'Entry Level - Active $50/month membership',
+    description: 'Entry Level - Active membership',
     qualificationText: 'Active $50/month membership',
     barberQualificationText: 'Active $150/month membership',
   },
@@ -133,11 +130,11 @@ export const RANKS: Record<RankId, RankConfig> = {
     borderColor: 'border-gray-400/20',
     matrixLevels: 4,
     barberMatrixLevels: 5,
-    requirements: { personalActiveDirects: 2, pamHasRank: 'silver', activeBronze: 2 },
+    requirements: { personalDownlineBronze: 2 },
     benefits: { fastStart: true, matchingDepth: 0, pools: [] },
     description: 'First builder unlock',
-    qualificationText: '2 active BRONZE members in downline',
-    barberQualificationText: '2 personal active directs + 1 SILVER in your team',
+    qualificationText: '2 Bronze in your Personal Downline',
+    barberQualificationText: '2 Bronze in your Personal Downline',
   },
   gold: {
     id: 'gold',
@@ -148,11 +145,11 @@ export const RANKS: Record<RankId, RankConfig> = {
     borderColor: 'border-yellow-500/20',
     matrixLevels: 5,
     barberMatrixLevels: 8,  // Gold+ barbers get all 8
-    requirements: { personalActiveDirects: 2, pamHasRank: 'gold', activeSilver: 2 },
+    requirements: { personalDownlineSilver: 2 },
     benefits: { fastStart: true, matchingDepth: 2, pools: [] },
     description: 'Leadership entry level',
-    qualificationText: '2 active SILVER members in downline',
-    barberQualificationText: '2 personal active directs + 1 GOLD in your team',
+    qualificationText: '2 Silver in your Personal Downline',
+    barberQualificationText: '2 Silver in your Personal Downline',
   },
   platinum: {
     id: 'platinum',
@@ -163,11 +160,11 @@ export const RANKS: Record<RankId, RankConfig> = {
     borderColor: 'border-blue-500/20',
     matrixLevels: 8,
     barberMatrixLevels: 8,
-    requirements: { personalActiveDirects: 2, pamHasRank: 'platinum', activeGold: 3 },
+    requirements: { personalDownlineGold: 2 },
     benefits: { fastStart: true, matchingDepth: 3, pools: ['diamond'], barberL5Override: true },
     description: 'Builder + Leader',
-    qualificationText: '3 active GOLD members in downline',
-    barberQualificationText: '2 personal active directs + 1 PLATINUM in your team',
+    qualificationText: '2 Gold in your Personal Downline',
+    barberQualificationText: '2 Gold in your Personal Downline',
   },
   diamond: {
     id: 'diamond',
@@ -178,11 +175,11 @@ export const RANKS: Record<RankId, RankConfig> = {
     borderColor: 'border-purple-500/20',
     matrixLevels: 8,
     barberMatrixLevels: 8,
-    requirements: { personalActiveDirects: 2, pamHasRank: 'diamond', activePlatinum: 4 },
+    requirements: { personalDownlinePlatinum: 2 },
     benefits: { fastStart: true, matchingDepth: 4, pools: ['diamond', 'crown'], barberL5Override: true },
     description: 'Top-tier leadership',
-    qualificationText: '4 active PLATINUM members in downline',
-    barberQualificationText: '2 personal active directs + 1 DIAMOND in your team',
+    qualificationText: '2 Platinum in your Personal Downline',
+    barberQualificationText: '2 Platinum in your Personal Downline',
   },
 };
 

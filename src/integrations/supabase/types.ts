@@ -344,6 +344,10 @@ export type Database = {
           pam_has_platinum: boolean
           pam_has_silver: boolean
           personal_active_directs: number
+          personal_downline_bronze_count: number
+          personal_downline_gold_count: number
+          personal_downline_platinum_count: number
+          personal_downline_silver_count: number
           personally_enrolled_count: number
           rank_qualified_at: string | null
           updated_at: string
@@ -366,6 +370,10 @@ export type Database = {
           pam_has_platinum?: boolean
           pam_has_silver?: boolean
           personal_active_directs?: number
+          personal_downline_bronze_count?: number
+          personal_downline_gold_count?: number
+          personal_downline_platinum_count?: number
+          personal_downline_silver_count?: number
           personally_enrolled_count?: number
           rank_qualified_at?: string | null
           updated_at?: string
@@ -388,6 +396,10 @@ export type Database = {
           pam_has_platinum?: boolean
           pam_has_silver?: boolean
           personal_active_directs?: number
+          personal_downline_bronze_count?: number
+          personal_downline_gold_count?: number
+          personal_downline_platinum_count?: number
+          personal_downline_silver_count?: number
           personally_enrolled_count?: number
           rank_qualified_at?: string | null
           updated_at?: string

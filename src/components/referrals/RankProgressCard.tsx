@@ -3,8 +3,8 @@ import { useRank } from "@/hooks/useRank";
 import { useAccountRole } from "@/hooks/useAccountRole";
 import RankBadge from "./RankBadge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Lock, ArrowRight, TrendingUp, Zap, Percent, Award, Users, Star } from "lucide-react";
-import { getMatchingBonusDisplay, getPoolsDisplay } from "@/lib/rankConfig";
+import { CheckCircle, Lock, ArrowRight, TrendingUp, Percent, Award, Users, Star } from "lucide-react";
+import { getMatchingBonusDisplay, getPoolsDisplay, RANKS } from "@/lib/rankConfig";
 
 const RankProgressCard = () => {
   const { 
@@ -14,11 +14,10 @@ const RankProgressCard = () => {
     progress,
     maxPayableLevel,
     commissionRate,
-    personalActiveDirects,
-    pamHasSilver,
-    pamHasGold,
-    pamHasPlatinum,
-    pamHasDiamond,
+    personalDownlineBronze,
+    personalDownlineSilver,
+    personalDownlineGold,
+    personalDownlinePlatinum,
     isLoading 
   } = useRank();
   
@@ -33,23 +32,29 @@ const RankProgressCard = () => {
     );
   }
 
-  // Get the PAM status for the next rank
-  const getPamStatusForNextRank = () => {
-    if (!nextRank || !isBarber) return null;
+  // Get the count and requirement for next rank
+  const getNextRankProgress = (): { count: number; required: number; rankName: string } | null => {
+    if (!nextRank) return null;
     
-    const rankToCheck = nextRank.requirements.pamHasRank;
-    if (!rankToCheck) return null;
+    const reqs = nextRank.requirements;
     
-    switch (rankToCheck) {
-      case 'silver': return pamHasSilver;
-      case 'gold': return pamHasGold;
-      case 'platinum': return pamHasPlatinum;
-      case 'diamond': return pamHasDiamond;
-      default: return false;
+    if (reqs.personalDownlineBronze) {
+      return { count: personalDownlineBronze, required: reqs.personalDownlineBronze, rankName: 'Bronze' };
     }
+    if (reqs.personalDownlineSilver) {
+      return { count: personalDownlineSilver, required: reqs.personalDownlineSilver, rankName: 'Silver' };
+    }
+    if (reqs.personalDownlineGold) {
+      return { count: personalDownlineGold, required: reqs.personalDownlineGold, rankName: 'Gold' };
+    }
+    if (reqs.personalDownlinePlatinum) {
+      return { count: personalDownlinePlatinum, required: reqs.personalDownlinePlatinum, rankName: 'Platinum' };
+    }
+    
+    return null;
   };
 
-  const pamStatus = getPamStatusForNextRank();
+  const nextRankProgress = getNextRankProgress();
 
   return (
     <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
@@ -129,44 +134,16 @@ const RankProgressCard = () => {
 
           {/* Requirements Checklist */}
           <div className="space-y-2">
-            {/* Personal Active Directs requirement (for barbers) */}
-            {isBarber && nextRank.requirements.personalActiveDirects && (
+            {/* Personal Downline requirement - same for barbers and clients now */}
+            {nextRankProgress && (
               <div className="flex items-center gap-2 text-sm">
-                {personalActiveDirects >= nextRank.requirements.personalActiveDirects ? (
+                {nextRankProgress.count >= nextRankProgress.required ? (
                   <CheckCircle className="w-4 h-4 text-green-500" />
                 ) : (
                   <Users className="w-4 h-4 text-muted-foreground" />
                 )}
-                <span className={personalActiveDirects >= nextRank.requirements.personalActiveDirects ? "text-green-500" : ""}>
-                  {nextRank.requirements.personalActiveDirects} Personal Active Directs ({personalActiveDirects}/{nextRank.requirements.personalActiveDirects})
-                </span>
-              </div>
-            )}
-
-            {/* PAM Has Rank requirement (for barbers) */}
-            {isBarber && nextRank.requirements.pamHasRank && (
-              <div className="flex items-center gap-2 text-sm">
-                {pamStatus ? (
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                ) : (
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                )}
-                <span className={pamStatus ? "text-green-500" : ""}>
-                  1 {nextRank.requirements.pamHasRank.toUpperCase()} member in your personal team
-                </span>
-              </div>
-            )}
-
-            {/* Standard qualification text (for clients) */}
-            {!isBarber && (
-              <div className="flex items-center gap-2 text-sm">
-                {progress.current >= progress.required ? (
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                ) : (
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                )}
-                <span className={progress.current >= progress.required ? "text-green-500" : ""}>
-                  {nextRank.qualificationText}
+                <span className={nextRankProgress.count >= nextRankProgress.required ? "text-green-500" : ""}>
+                  {nextRankProgress.required} {nextRankProgress.rankName} in Personal Downline ({nextRankProgress.count}/{nextRankProgress.required})
                 </span>
               </div>
             )}
