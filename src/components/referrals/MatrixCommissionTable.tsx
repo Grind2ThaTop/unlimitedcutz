@@ -8,20 +8,30 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { RANKS, RANK_ORDER, type RankId, CLIENT_MATRIX_PERCENT, BARBER_MATRIX_PERCENT } from "@/lib/rankConfig";
+import { 
+  RANKS, 
+  RANK_ORDER, 
+  type RankId, 
+  CLIENT_MATRIX_PERCENT, 
+  BARBER_MATRIX_PERCENT,
+  PLATINUM_BARBER_RATE,
+  BARBER_LEVEL_UNLOCKS,
+  CLIENT_LEVEL_UNLOCKS
+} from "@/lib/rankConfig";
 import { useRank } from "@/hooks/useRank";
 import { useAccountRole } from "@/hooks/useAccountRole";
 import { cn } from "@/lib/utils";
 
-// Pre-calculated positions per rank (3×8 matrix)
-// Level positions: L1=3, L2=9, L3=27, L4=81, L5=243, L6=729, L7=2187, L8=6561
-// Cumulative: L1-3=39, L1-4=120, L1-5=363, L1-6=1092, L1-7=3279, L1-8=9840
-const RANK_POSITIONS: Record<RankId, number> = {
-  bronze: 39,       // L1-3
-  silver: 120,      // L1-4
-  gold: 363,        // L1-5
-  platinum: 1092,   // L1-6
-  diamond: 9840,    // L1-8 (Full matrix)
+// Get positions for a level (3^level)
+const getPositions = (level: number) => Math.pow(3, level);
+
+// Calculate cumulative positions up to a level
+const getCumulativePositions = (maxLevel: number): number => {
+  let total = 0;
+  for (let i = 1; i <= maxLevel; i++) {
+    total += getPositions(i);
+  }
+  return total;
 };
 
 // Calculate totals based on rate
@@ -30,20 +40,44 @@ const calculateTotals = (positions: number, rate: number, baseAmount: number) =>
   return positions * perPosition;
 };
 
-// Get positions for a level (3^level)
-const getPositions = (level: number) => Math.pow(3, level);
-
 const MatrixCommissionTable = () => {
   const [showAddons, setShowAddons] = useState(false);
-  const { currentRankId } = useRank();
-  const { accountType, matrixPercent, isBarber } = useAccountRole();
+  const { currentRankId, commissionRate } = useRank();
+  const { accountType, isBarber } = useAccountRole();
+
+  // Use the commission rate from useRank (handles 7% for Platinum+ barbers)
+  const displayRate = commissionRate;
 
   // Generate levels 1-8
   const levels = Array.from({ length: 8 }, (_, i) => i + 1);
 
+  // Get max level for a rank based on account type
+  const getMaxLevel = (rankId: RankId): number => {
+    if (isBarber) {
+      return BARBER_LEVEL_UNLOCKS[rankId];
+    }
+    return CLIENT_LEVEL_UNLOCKS[rankId];
+  };
+
   // Check if level is eligible for a rank
   const isEligible = (level: number, rankId: RankId) => {
-    return level <= RANKS[rankId].matrixLevels;
+    return level <= getMaxLevel(rankId);
+  };
+
+  // Get rate for a specific rank (Platinum+ barbers get 7%)
+  const getRateForRank = (rankId: RankId): number => {
+    if (isBarber && (rankId === 'platinum' || rankId === 'diamond')) {
+      return PLATINUM_BARBER_RATE;
+    }
+    return isBarber ? BARBER_MATRIX_PERCENT : CLIENT_MATRIX_PERCENT;
+  };
+
+  // Calculate total earnings for a rank
+  const getTotalForRank = (rankId: RankId, baseAmount: number): number => {
+    const maxLevel = getMaxLevel(rankId);
+    const positions = getCumulativePositions(maxLevel);
+    const rate = getRateForRank(rankId);
+    return calculateTotals(positions, rate, baseAmount);
   };
 
   return (
@@ -62,13 +96,13 @@ const MatrixCommissionTable = () => {
             )}
           </div>
           <div>
-            <p className="font-display text-lg">Your Rate: <span className={isBarber ? "text-primary" : "text-blue-500"}>{matrixPercent}%</span></p>
+            <p className="font-display text-lg">Your Rate: <span className={isBarber ? "text-primary" : "text-blue-500"}>{displayRate}%</span></p>
             <p className="text-sm text-muted-foreground capitalize">{accountType} Account</p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-sm text-muted-foreground">Per $50 membership</p>
-          <p className="font-display text-xl">${(50 * matrixPercent / 100).toFixed(2)}</p>
+          <p className="font-display text-xl">${(50 * displayRate / 100).toFixed(2)}</p>
         </div>
       </div>
 
@@ -97,6 +131,9 @@ const MatrixCommissionTable = () => {
           </div>
           <p className="text-2xl font-display">{BARBER_MATRIX_PERCENT}%</p>
           <p className="text-sm text-muted-foreground">${(50 * BARBER_MATRIX_PERCENT / 100).toFixed(2)} per position</p>
+          {isBarber && (
+            <p className="text-xs text-blue-500 mt-1">Platinum+: {PLATINUM_BARBER_RATE}%</p>
+          )}
         </div>
       </div>
 
@@ -110,6 +147,11 @@ const MatrixCommissionTable = () => {
           Our Matrix is <strong className="text-foreground">3 wide</strong> and <strong className="text-foreground">8 levels deep</strong>. 
           It fills automatically using spillover. Bigger structure. Bigger potential.
         </p>
+        {isBarber && (
+          <p className="text-muted-foreground leading-relaxed mt-3">
+            <strong className="text-foreground">Barber Level Unlocks:</strong> Bronze=4, Silver=5, Gold+=6
+          </p>
+        )}
       </div>
 
       {/* Level Breakdown */}
@@ -170,9 +212,14 @@ const MatrixCommissionTable = () => {
                       isCurrentRank && "bg-primary/20"
                     )}
                   >
-                    <div className="flex items-center justify-center gap-1">
-                      <span>{rank.emoji}</span>
-                      <span className="hidden sm:inline">{rank.name}</span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className="flex items-center gap-1">
+                        <span>{rank.emoji}</span>
+                        <span className="hidden sm:inline">{rank.name}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground font-normal">
+                        L1-{getMaxLevel(rankId)}
+                      </span>
                     </div>
                   </th>
                 );
@@ -191,6 +238,8 @@ const MatrixCommissionTable = () => {
                 </td>
                 {RANK_ORDER.map((rankId) => {
                   const isCurrentRank = rankId === currentRankId;
+                  const eligible = isEligible(level, rankId);
+                  const rate = getRateForRank(rankId);
                   return (
                     <td 
                       key={rankId} 
@@ -199,11 +248,11 @@ const MatrixCommissionTable = () => {
                         isCurrentRank && "bg-primary/10"
                       )}
                     >
-                      {isEligible(level, rankId) ? (
+                      {eligible ? (
                         <span className={cn(
                           "font-medium",
                           isBarber ? "text-primary" : "text-blue-500"
-                        )}>{matrixPercent}%</span>
+                        )}>{rate}%</span>
                       ) : (
                         <span className="text-muted-foreground/50">—</span>
                       )}
@@ -221,7 +270,7 @@ const MatrixCommissionTable = () => {
               </td>
               {RANK_ORDER.map((rankId) => {
                 const isCurrentRank = rankId === currentRankId;
-                const total = calculateTotals(RANK_POSITIONS[rankId], matrixPercent, 50);
+                const total = getTotalForRank(rankId, 50);
                 return (
                   <td 
                     key={rankId} 
@@ -244,7 +293,7 @@ const MatrixCommissionTable = () => {
                 </td>
                 {RANK_ORDER.map((rankId) => {
                   const isCurrentRank = rankId === currentRankId;
-                  const total = calculateTotals(RANK_POSITIONS[rankId], matrixPercent, 25);
+                  const total = getTotalForRank(rankId, 25);
                   return (
                     <td 
                       key={rankId} 
@@ -267,8 +316,8 @@ const MatrixCommissionTable = () => {
                 </td>
                 {RANK_ORDER.map((rankId) => {
                   const isCurrentRank = rankId === currentRankId;
-                  const baseTotal = calculateTotals(RANK_POSITIONS[rankId], matrixPercent, 50);
-                  const addonTotal = calculateTotals(RANK_POSITIONS[rankId], matrixPercent, 25);
+                  const baseTotal = getTotalForRank(rankId, 50);
+                  const addonTotal = getTotalForRank(rankId, 25);
                   const total = baseTotal + addonTotal;
                   return (
                     <td 
@@ -290,7 +339,7 @@ const MatrixCommissionTable = () => {
 
       {/* Footer Note */}
       <p className="text-sm text-muted-foreground text-center">
-        Rates shown are based on your <strong className="capitalize">{accountType}</strong> account ({matrixPercent}%). 
+        Rates shown are based on your <strong className="capitalize">{accountType}</strong> account ({displayRate}%). 
         All calculations use <strong>$50 membership</strong> and <strong>$25 add-on connections</strong>.
       </p>
     </div>
