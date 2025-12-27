@@ -17,16 +17,17 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const MatchingBonusChart = () => {
-  const { accountType, matchingL1, matchingL2, isBarber } = useAccountRole();
+  const { accountType, matchingL1, matchingL2, matchingL3, isBarber } = useAccountRole();
 
-  // Create chart data based on user's role
+  // Create chart data based on user's role (barbers get L3)
   const chartData = [
     { level: "Level 1", percentage: matchingL1, description: "Match on direct referrals' earnings" },
     { level: "Level 2", percentage: matchingL2, description: "Match on 2nd generation earnings" },
+    ...(isBarber && matchingL3 ? [{ level: "Level 3", percentage: matchingL3, description: "Match on 3rd generation earnings" }] : []),
   ];
 
   // Calculate max for chart domain
-  const maxPercent = Math.max(BARBER_MATCHING.l1, BARBER_MATCHING.l2) + 5;
+  const maxPercent = Math.max(BARBER_MATCHING.l1, BARBER_MATCHING.l2, BARBER_MATCHING.l3 || 0) + 5;
 
   return (
     <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-xl p-6">
@@ -98,6 +99,12 @@ const MatchingBonusChart = () => {
           <span className="text-muted-foreground">If Level 2 earns $100:</span>
           <span className="font-medium text-purple-500">You earn ${matchingL2}</span>
         </div>
+        {isBarber && matchingL3 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">If Level 3 earns $100:</span>
+            <span className="font-medium text-purple-500">You earn ${matchingL3}</span>
+          </div>
+        )}
       </div>
 
       {/* Role comparison */}
@@ -116,7 +123,7 @@ const MatchingBonusChart = () => {
               <Scissors className="w-3 h-3" />
               <span className="font-medium">Barber</span>
             </div>
-            <p className="text-muted-foreground">L1: {BARBER_MATCHING.l1}% • L2: {BARBER_MATCHING.l2}%</p>
+            <p className="text-muted-foreground">L1: {BARBER_MATCHING.l1}% • L2: {BARBER_MATCHING.l2}% • L3: {BARBER_MATCHING.l3}%</p>
           </div>
         </div>
       </div>
