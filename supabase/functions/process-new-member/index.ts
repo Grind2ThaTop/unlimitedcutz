@@ -164,6 +164,47 @@ serve(async (req) => {
       throw new Error("user_id is required");
     }
 
+    // ========== AUTHORIZATION CHECK ==========
+    // Check if this is an authenticated user call (JWT) or service call
+    const authHeader = req.headers.get('Authorization');
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Create a client with the user's JWT to validate their identity
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        {
+          auth: { persistSession: false },
+          global: { headers: { Authorization: authHeader } }
+        }
+      );
+      
+      const { data: { user }, error: authError } = await userClient.auth.getUser();
+      
+      if (authError || !user) {
+        logStep("Auth failed", { error: authError?.message });
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        });
+      }
+      
+      // Users can only place themselves (not other users)
+      if (user.id !== user_id) {
+        logStep("Self-placement violation", { authenticatedUser: user.id, requestedUser: user_id });
+        return new Response(JSON.stringify({ error: "Can only place yourself" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+      
+      logStep("Authenticated self-placement", { userId: user.id });
+    } else {
+      // No auth header - this is a server-to-server call (webhook, etc.)
+      // Allow it as the service role key validates the admin context
+      logStep("Server-to-server call (no user auth)", { user_id });
+    }
+
     // Get compensation settings
     const { data: settingsData } = await supabaseAdmin
       .from('app_settings')
