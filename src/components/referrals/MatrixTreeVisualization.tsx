@@ -267,7 +267,7 @@ const MatrixTreeVisualization = () => {
   const [expanded, setExpanded] = useState(true);
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const maxDepth = 4; // Show 4 levels
+  const maxDepth = 2; // Show only current level + next level
 
   // Fetch matrix nodes with profile names
   const { data: matrixNodes, isLoading } = useQuery({
@@ -341,7 +341,7 @@ const MatrixTreeVisualization = () => {
           </div>
           <div>
             <h3 className="font-display text-lg">Your Matrix Tree</h3>
-            <p className="text-xs text-muted-foreground">3×8 structure (showing 4 levels)</p>
+            <p className="text-xs text-muted-foreground">3×8 structure (showing 2 levels)</p>
           </div>
         </div>
         <Button
@@ -388,11 +388,7 @@ const MatrixTreeVisualization = () => {
             <span>Inactive</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded-full border border-dashed border-muted-foreground/50" />
-            <span>Open</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 rounded-full bg-purple-500/50 border border-purple-500" />
+            <div className="w-4 h-4 rounded-full bg-secondary border border-secondary-foreground/50" />
             <span>Barber</span>
           </div>
         </div>
@@ -439,15 +435,11 @@ const MatrixTreeVisualization = () => {
         </div>
       )}
 
-      {/* Stats summary */}
-      <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-border/50">
+      {/* Stats summary - only show filled and inactive, not open */}
+      <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-border/50">
         <div className="text-center">
           <p className="text-2xl font-display text-green-500">{counts.filled}</p>
           <p className="text-xs text-muted-foreground">Filled</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-display text-muted-foreground">{counts.open}</p>
-          <p className="text-xs text-muted-foreground">Open</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-display text-amber-500">{counts.inactive}</p>
