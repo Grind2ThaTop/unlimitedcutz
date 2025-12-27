@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Shield, Users, UserPlus } from 'lucide-react';
+import { Shield, UserPlus } from 'lucide-react';
 import PortalLayout from '@/components/portal/PortalLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import UserRankTable from '@/components/admin/UserRankTable';
 import RankAssignmentDialog from '@/components/admin/RankAssignmentDialog';
 import UserRankHistoryDialog from '@/components/admin/UserRankHistoryDialog';
 import AddUserDialog from '@/components/admin/AddUserDialog';
 import AdminMatrixTree from '@/components/admin/AdminMatrixTree';
-import AdminEarningsTable from '@/components/admin/AdminEarningsTable';
+import UnifiedUserTable from '@/components/admin/UnifiedUserTable';
+import UserDetailDialog from '@/components/admin/UserDetailDialog';
+import GHLConnectionCard from '@/components/admin/GHLConnectionCard';
 import { useAdmin } from '@/hooks/useAdmin';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -44,18 +45,29 @@ const AdminRanks = () => {
   } = useAdmin();
 
   const [selectedUser, setSelectedUser] = useState<UserWithRank | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+
+  const handleViewUser = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    setSelectedUser(user || null);
+    setSelectedUserId(userId);
+    setDetailDialogOpen(true);
+  };
 
   const handleEditRank = (user: UserWithRank) => {
     setSelectedUser(user);
     setEditDialogOpen(true);
+    setDetailDialogOpen(false);
   };
 
   const handleViewHistory = (user: UserWithRank) => {
     setSelectedUser(user);
     setHistoryDialogOpen(true);
+    setDetailDialogOpen(false);
   };
 
   const handleToggleActive = (userId: string, isActive: boolean) => {
@@ -101,7 +113,7 @@ const AdminRanks = () => {
               <Shield className="w-6 h-6 text-primary" />
             </div>
             <div>
-            <h1 className="text-2xl font-display font-bold text-foreground">
+              <h1 className="text-2xl font-display font-bold text-foreground">
                 Admin Dashboard
               </h1>
               <p className="text-muted-foreground">
@@ -115,23 +127,17 @@ const AdminRanks = () => {
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {/* Stats Row with GHL */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           <Card>
             <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Total Users</span>
-              </div>
+              <span className="text-sm text-muted-foreground">Total Users</span>
               <p className="text-2xl font-bold mt-1">{users.length}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">💎</span>
-                <span className="text-sm text-muted-foreground">Diamond</span>
-              </div>
+              <span className="text-sm text-muted-foreground">💎 Diamond</span>
               <p className="text-2xl font-bold mt-1">
                 {users.filter(u => u.member_rank?.current_rank === 'diamond').length}
               </p>
@@ -139,10 +145,7 @@ const AdminRanks = () => {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🔵</span>
-                <span className="text-sm text-muted-foreground">Platinum</span>
-              </div>
+              <span className="text-sm text-muted-foreground">🔵 Platinum</span>
               <p className="text-2xl font-bold mt-1">
                 {users.filter(u => u.member_rank?.current_rank === 'platinum').length}
               </p>
@@ -150,10 +153,7 @@ const AdminRanks = () => {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🟡</span>
-                <span className="text-sm text-muted-foreground">Gold</span>
-              </div>
+              <span className="text-sm text-muted-foreground">🟡 Gold</span>
               <p className="text-2xl font-bold mt-1">
                 {users.filter(u => u.member_rank?.current_rank === 'gold').length}
               </p>
@@ -161,43 +161,39 @@ const AdminRanks = () => {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Active</span>
-              </div>
+              <span className="text-sm text-muted-foreground">Active</span>
               <p className="text-2xl font-bold mt-1">
                 {users.filter(u => u.member_rank?.is_active !== false).length}
               </p>
             </CardContent>
           </Card>
+          {/* GHL Connection */}
+          <GHLConnectionCard />
         </div>
 
         {/* Site-Wide Matrix */}
         <AdminMatrixTree />
 
-        {/* Earnings & Payments */}
-        <AdminEarningsTable />
-
-        {/* User Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Members</CardTitle>
-            <CardDescription>
-              Click edit to assign or override ranks. Platinum and Diamond ranks require admin approval.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <UserRankTable
-              users={users}
-              isLoading={usersLoading}
-              onEditRank={handleEditRank}
-              onViewHistory={handleViewHistory}
-              onToggleActive={handleToggleActive}
-            />
-          </CardContent>
-        </Card>
+        {/* Unified User Table */}
+        <UnifiedUserTable
+          users={users}
+          isLoading={usersLoading}
+          onViewUser={handleViewUser}
+          onEditRank={handleEditRank}
+          onViewHistory={handleViewHistory}
+          onToggleActive={handleToggleActive}
+        />
       </div>
 
       {/* Dialogs */}
+      <UserDetailDialog
+        userId={selectedUserId}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        onEditRank={() => selectedUser && handleEditRank(selectedUser)}
+        onViewHistory={() => selectedUser && handleViewHistory(selectedUser)}
+      />
+
       <RankAssignmentDialog
         user={selectedUser}
         open={editDialogOpen}

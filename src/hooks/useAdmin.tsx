@@ -27,6 +27,9 @@ interface UserWithRank {
     account_type: AccountType;
     barber_verified: boolean;
   } | null;
+  total_earned: number;
+  pending_amount: number;
+  paid_amount: number;
 }
 
 interface RankHistoryEntry {
@@ -61,7 +64,7 @@ export const useAdmin = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch all users with their ranks (admin only)
+  // Fetch all users with their ranks and earnings (admin only)
   const usersQuery = useQuery({
     queryKey: ['adminUsers'],
     queryFn: async () => {
@@ -87,10 +90,43 @@ export const useAdmin = () => {
       
       if (accountRolesError) throw accountRolesError;
 
+      // Get all commission events for earnings
+      const { data: commissions, error: commissionsError } = await supabase
+        .from('commission_events')
+        .select('user_id, amount, status');
+      
+      if (commissionsError) throw commissionsError;
+
+      // Aggregate earnings by user
+      const userEarningsMap = new Map<string, {
+        total_earned: number;
+        pending_amount: number;
+        paid_amount: number;
+      }>();
+
+      commissions?.forEach(c => {
+        const existing = userEarningsMap.get(c.user_id) || {
+          total_earned: 0,
+          pending_amount: 0,
+          paid_amount: 0
+        };
+
+        existing.total_earned += Number(c.amount);
+        
+        if (c.status === 'pending') {
+          existing.pending_amount += Number(c.amount);
+        } else if (c.status === 'paid') {
+          existing.paid_amount += Number(c.amount);
+        }
+
+        userEarningsMap.set(c.user_id, existing);
+      });
+
       // Combine the data
       const usersWithRanks: UserWithRank[] = (profiles || []).map(profile => {
         const rank = ranks?.find(r => r.user_id === profile.id);
         const accountRole = accountRoles?.find(ar => ar.user_id === profile.id);
+        const earnings = userEarningsMap.get(profile.id) || { total_earned: 0, pending_amount: 0, paid_amount: 0 };
         return {
           ...profile,
           member_rank: rank ? {
@@ -105,6 +141,9 @@ export const useAdmin = () => {
             account_type: accountRole.account_type,
             barber_verified: accountRole.barber_verified,
           } : null,
+          total_earned: earnings.total_earned,
+          pending_amount: earnings.pending_amount,
+          paid_amount: earnings.paid_amount,
         };
       });
 
