@@ -8,6 +8,7 @@ import RankAssignmentDialog from '@/components/admin/RankAssignmentDialog';
 import UserRankHistoryDialog from '@/components/admin/UserRankHistoryDialog';
 import AddUserDialog from '@/components/admin/AddUserDialog';
 import AdminMatrixTree from '@/components/admin/AdminMatrixTree';
+import AdminEarningsTable from '@/components/admin/AdminEarningsTable';
 import { useAdmin } from '@/hooks/useAdmin';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -100,11 +101,11 @@ const AdminRanks = () => {
               <Shield className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground">
-                Rank Management
+            <h1 className="text-2xl font-display font-bold text-foreground">
+                Admin Dashboard
               </h1>
               <p className="text-muted-foreground">
-                Assign and manage user ranks
+                Manage users, ranks, payments & earnings
               </p>
             </div>
           </div>
@@ -172,6 +173,9 @@ const AdminRanks = () => {
 
         {/* Site-Wide Matrix */}
         <AdminMatrixTree />
+
+        {/* Earnings & Payments */}
+        <AdminEarningsTable />
 
         {/* User Table */}
         <Card>
