@@ -24,11 +24,14 @@ interface MatrixNodeData {
     full_name: string | null;
     email: string;
   } | null;
+  accountRole: {
+    account_type: string;
+  } | null;
 }
 
 interface TreeNodeData {
   id: string;
-  status: 'you' | 'filled' | 'inactive' | 'open';
+  status: 'you' | 'filled' | 'inactive' | 'open' | 'barber';
   name?: string;
   level: number;
   earnings?: number;
@@ -43,6 +46,8 @@ const NodeIcon = ({ status }: { status: TreeNodeData['status'] }) => {
       return <User className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'filled':
       return <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />;
+    case 'barber':
+      return <UserCheck className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'inactive':
       return <UserX className="w-3 h-3 sm:w-4 sm:h-4" />;
     case 'open':
@@ -53,6 +58,7 @@ const NodeIcon = ({ status }: { status: TreeNodeData['status'] }) => {
 const statusStyles = {
   you: 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background',
   filled: 'bg-green-500/20 text-green-500 border border-green-500/50',
+  barber: 'bg-secondary text-secondary-foreground border-2 border-secondary-foreground',
   inactive: 'bg-amber-500/20 text-amber-500 border border-amber-500/50',
   open: 'bg-muted/50 text-muted-foreground border border-dashed border-muted-foreground/30',
 };
@@ -60,6 +66,7 @@ const statusStyles = {
 const statusLabels = {
   you: 'Your Position',
   filled: 'Active Member',
+  barber: 'Barber',
   inactive: 'Inactive',
   open: 'Open Position',
 };
@@ -203,9 +210,13 @@ const buildUserTree = (nodes: MatrixNodeData[], userId: string): TreeNodeData | 
     const middleChildData = matrixNode.middle_child ? nodeMap.get(matrixNode.middle_child) : null;
     const rightChildData = matrixNode.right_child ? nodeMap.get(matrixNode.right_child) : null;
 
+    // Determine status - barbers show as 'barber' status (black), others as 'filled' (green)
+    const isBarber = matrixNode.accountRole?.account_type === 'barber';
+    let status: TreeNodeData['status'] = isUser ? 'you' : (isBarber ? 'barber' : 'filled');
+
     return {
       id: matrixNode.id,
-      status: isUser ? 'you' : 'filled',
+      status,
       name: isUser ? 'You' : getDisplayName(matrixNode),
       level: isUser ? 0 : matrixNode.level,
       earnings: isUser ? undefined : 1.25,
@@ -244,7 +255,7 @@ const countNodes = (node: TreeNodeData | null, maxDepth: number, currentDepth: n
     return { filled: 0, open: totalOpen, inactive: 0 };
   }
 
-  const isFilled = node.status === 'filled' || node.status === 'you';
+  const isFilled = node.status === 'filled' || node.status === 'you' || node.status === 'barber';
   const isInactive = node.status === 'inactive';
   let filled = isFilled ? 1 : 0;
   let open = node.status === 'open' ? 1 : 0;
@@ -267,9 +278,9 @@ const MatrixTreeVisualization = () => {
   const [expanded, setExpanded] = useState(true);
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const maxDepth = 2; // Show only current level + next level
+  const maxDepth = 3; // Show current level + next 2 levels
 
-  // Fetch matrix nodes with profile names
+  // Fetch matrix nodes with profile names and account roles
   const { data: matrixNodes, isLoading } = useQuery({
     queryKey: ['matrixTree', user?.id],
     queryFn: async () => {
@@ -285,18 +296,28 @@ const MatrixTreeVisualization = () => {
 
       const userIds = [...new Set(nodes.map(n => n.user_id))];
       
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', userIds);
+      // Fetch profiles and account roles in parallel
+      const [profilesResult, accountRolesResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds),
+        supabase
+          .from('account_roles')
+          .select('user_id, account_type')
+          .in('user_id', userIds)
+      ]);
       
-      if (profilesError) throw profilesError;
+      if (profilesResult.error) throw profilesResult.error;
+      if (accountRolesResult.error) throw accountRolesResult.error;
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const profileMap = new Map(profilesResult.data?.map(p => [p.id, p]) || []);
+      const accountRoleMap = new Map(accountRolesResult.data?.map(ar => [ar.user_id, ar]) || []);
 
       return nodes.map(node => ({
         ...node,
         profiles: profileMap.get(node.user_id) || null,
+        accountRole: accountRoleMap.get(node.user_id) || null,
       })) as MatrixNodeData[];
     },
     enabled: !!user?.id,
@@ -341,7 +362,7 @@ const MatrixTreeVisualization = () => {
           </div>
           <div>
             <h3 className="font-display text-lg">Your Matrix Tree</h3>
-            <p className="text-xs text-muted-foreground">3×8 structure (showing 2 levels)</p>
+            <p className="text-xs text-muted-foreground">3×8 structure (showing 3 levels)</p>
           </div>
         </div>
         <Button
