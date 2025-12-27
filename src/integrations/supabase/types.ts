@@ -22,6 +22,7 @@ export type Database = {
           id: string
           matching_l1_percent: number
           matching_l2_percent: number
+          matching_l3_percent: number | null
           matrix_percent: number
           sponsor_id: string | null
           updated_at: string
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           matching_l1_percent?: number
           matching_l2_percent?: number
+          matching_l3_percent?: number | null
           matrix_percent?: number
           sponsor_id?: string | null
           updated_at?: string
@@ -48,6 +50,7 @@ export type Database = {
           id?: string
           matching_l1_percent?: number
           matching_l2_percent?: number
+          matching_l3_percent?: number | null
           matrix_percent?: number
           sponsor_id?: string | null
           updated_at?: string

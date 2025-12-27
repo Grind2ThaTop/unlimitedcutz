@@ -8,9 +8,16 @@ export type AccountType = 'client' | 'barber';
 export const CLIENT_MATRIX_PERCENT = 2.5;  // $1.25 per position
 export const BARBER_MATRIX_PERCENT = 5.0;  // $2.50 per position
 
+// Platinum+ Barber Override for Levels 5-8
+export const PLATINUM_BARBER_L5_OVERRIDE = 8.0;  // 8% for L5-L8
+
 // Matching Bonus Rates
 export const CLIENT_MATCHING = { l1: 10, l2: 5 };   // 10% L1, 5% L2
-export const BARBER_MATCHING = { l1: 20, l2: 10 };  // 20% L1, 10% L2
+export const BARBER_MATCHING = { l1: 20, l2: 10, l3: 10 };  // 20% L1, 10% L2, 10% L3
+
+// Fast Start Rates
+export const CLIENT_FAST_START = { level_1: 20, level_2: 10, level_3: 5 };
+export const BARBER_FAST_START = { level_1: 25, level_2: 15, level_3: 10 };
 
 // Get matrix percentage based on account type
 export const getMatrixPercent = (accountType: AccountType): number => {
@@ -18,8 +25,13 @@ export const getMatrixPercent = (accountType: AccountType): number => {
 };
 
 // Get matching percentages based on account type
-export const getMatchingRates = (accountType: AccountType): { l1: number; l2: number } => {
+export const getMatchingRates = (accountType: AccountType): { l1: number; l2: number; l3?: number } => {
   return accountType === 'barber' ? BARBER_MATCHING : CLIENT_MATCHING;
+};
+
+// Get fast start rates based on account type
+export const getFastStartRates = (accountType: AccountType): { level_1: number; level_2: number; level_3: number } => {
+  return accountType === 'barber' ? BARBER_FAST_START : CLIENT_FAST_START;
 };
 
 // New rank IDs matching database enum
@@ -38,6 +50,7 @@ export interface RankBenefits {
   fastStart: boolean;
   matchingDepth: number;  // How many levels of matching bonus (0 = none)
   pools: ('diamond' | 'crown')[];
+  barberL5Override?: boolean; // Platinum+ barbers get 8% for L5-L8
 }
 
 export interface RankConfig {
@@ -101,9 +114,9 @@ export const RANKS: Record<RankId, RankConfig> = {
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
-    matrixLevels: 6,
+    matrixLevels: 8,  // Platinum unlocks levels 6-8
     requirements: { activeGold: 3 },
-    benefits: { fastStart: true, matchingDepth: 3, pools: ['diamond'] },
+    benefits: { fastStart: true, matchingDepth: 3, pools: ['diamond'], barberL5Override: true },
     description: 'Builder + Leader',
     qualificationText: '3 active GOLD members in downline',
   },
@@ -116,7 +129,7 @@ export const RANKS: Record<RankId, RankConfig> = {
     borderColor: 'border-purple-500/20',
     matrixLevels: 8,
     requirements: { activePlatinum: 4 },
-    benefits: { fastStart: true, matchingDepth: 4, pools: ['diamond', 'crown'] },
+    benefits: { fastStart: true, matchingDepth: 4, pools: ['diamond', 'crown'], barberL5Override: true },
     description: 'Top-tier leadership',
     qualificationText: '4 active PLATINUM members in downline',
   },
@@ -129,7 +142,7 @@ export const RANK_TO_MAX_LEVEL: Record<RankId, number> = {
   bronze: 3,
   silver: 4,
   gold: 5,
-  platinum: 6,
+  platinum: 8,  // Platinum unlocks L6-L8
   diamond: 8,
 };
 

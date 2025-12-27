@@ -17,6 +17,7 @@ export interface AccountRole {
   matrix_percent: number;
   matching_l1_percent: number;
   matching_l2_percent: number;
+  matching_l3_percent: number | null;
   upgraded_at: string | null;
   created_at: string;
   updated_at: string;
@@ -116,6 +117,7 @@ export const useAccountRole = () => {
   const matrixPercent = accountRole?.matrix_percent || CLIENT_MATRIX_PERCENT;
   const matchingL1 = accountRole?.matching_l1_percent || CLIENT_MATCHING.l1;
   const matchingL2 = accountRole?.matching_l2_percent || CLIENT_MATCHING.l2;
+  const matchingL3 = accountRole?.matching_l3_percent || (accountType === 'barber' ? BARBER_MATCHING.l3 : null);
   const isBarber = accountType === 'barber';
   const isClient = accountType === 'client';
 
@@ -125,6 +127,7 @@ export const useAccountRole = () => {
     matrixPercent,
     matchingL1,
     matchingL2,
+    matchingL3,
     isBarber,
     isClient,
     isLoading: accountRoleQuery.isLoading,
